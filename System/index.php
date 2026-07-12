@@ -114,6 +114,11 @@
             <i class="fas fa-chevron-down" style="font-size:0.6rem;color:var(--text-gray);"></i>
           </button>
           <div class="profile-dropdown-menu" id="profileMenu">
+            <button class="menu-item" data-page="profile-dashboard"><i class="fas fa-id-card"></i> Profile Dashboard</button>
+            <button class="menu-item" data-page="my-profile"><i class="fas fa-user"></i> My Profile</button>
+            <button class="menu-item" data-page="change-password"><i class="fas fa-key"></i> Change Password</button>
+            <button class="menu-item" data-page="leave-request"><i class="fas fa-paper-plane"></i> Leave Request</button>
+            <button class="menu-item" data-page="leave-status"><i class="fas fa-clipboard-list"></i> Leave Status</button>
             <div class="menu-divider"></div>
             <button class="menu-item" id="logoutFromProfile"><i class="fas fa-sign-out-alt" style="color:var(--red);"></i> Logout</button>
           </div>
