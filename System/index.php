@@ -12,14 +12,8 @@
 <div id="loginPage">
   <div class="login-card">
     <div class="logo">
-      <svg viewBox="0 0 60 60" fill="none" width="48" height="48">
-        <rect x="4" y="10" width="52" height="40" rx="10" fill="#6b3fa0" />
-        <path d="M18 28L24 20L30 28L36 20L42 28" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-        <circle cx="24" cy="38" r="4" fill="#f9c80e" />
-        <circle cx="36" cy="38" r="4" fill="#f9c80e" />
-        <rect x="8" y="8" width="44" height="6" rx="3" fill="#f9c80e" />
-      </svg>
-      <h1>Peoples<span>Bakers</span></h1>
+      <img src="assets/images/peoples-bakers-logo.png" alt="Peoples Bakers Logo" style="height: 80px; border-radius: 50%; object-fit: cover;">
+      <h1>Peoples <span>Bakers</span></h1>
     </div>
 
     <div class="login-tabs" style="display:flex; margin-bottom:1.5rem; border-bottom:1px solid var(--border-light);">
