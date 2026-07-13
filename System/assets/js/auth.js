@@ -198,3 +198,92 @@ if (linkBackToLogin) {
         viewCustomerLogin.style.display = 'block';
     });
 }
+
+
+// customer login authentication
+const customerLoginForm = document.getElementById('customerLoginForm');
+
+if (customerLoginForm) {
+    customerLoginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('customerLoginEmail').value.trim();
+        const password = document.getElementById('customerLoginPassword').value.trim();
+        const errorEl = document.getElementById('customerLoginError');
+        
+        try {
+            const response = await CustomerAPI.login(email, password);
+            if (!response.success) {
+                errorEl.style.display = 'block';
+                errorEl.textContent = response.message || 'Invalid email or password.';
+                return;
+            }
+            errorEl.style.display = 'none';
+            
+            // Assign the active session state
+            currentUser = response.data;
+            currentUser.displayRole = 'Valued Customer';
+            
+            // Save locally for session persistence loop
+            localStorage.setItem('peoplesBakersUser', JSON.stringify(currentUser));
+            
+            // Swap display screens and mount workspace controls
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            
+            await loadAppData();
+            currentTab = 'online-store'; // Set default view route
+            renderApp();
+            
+        } catch (error) {
+            errorEl.style.display = 'block';
+            errorEl.textContent = 'Network error: ' + error.message;
+        }
+    });
+}
+
+// customer account creation logic
+const customerRegisterForm = document.getElementById('customerRegisterForm');
+
+if (customerRegisterForm) {
+    customerRegisterForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Grab values from inputs securely
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const address = document.getElementById('regAddress').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const errorEl = document.getElementById('regError');
+        
+        try {
+            // Send registration payload through api_client bridge
+            const response = await CustomerAPI.register({ 
+                name, 
+                email, 
+                password, 
+                phone, 
+                address 
+            });
+            
+            if (!response.success) {
+                errorEl.style.display = 'block';
+                errorEl.textContent = response.message || 'Registration failed.';
+                return;
+            }
+            
+            // Clean up elements and display completion confirmation
+            errorEl.style.display = 'none';
+            customerRegisterForm.reset();
+            showToast('Account created successfully! Please sign in.');
+            
+            // Redirect the viewport safely back to the Sign-In interface view
+            document.getElementById('viewCustomerRegister').style.display = 'none';
+            document.getElementById('viewCustomerLogin').style.display = 'block';
+            
+        } catch (error) {
+            errorEl.style.display = 'block';
+            errorEl.textContent = 'Network error: ' + error.message;
+        }
+    });
+}
