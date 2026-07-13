@@ -1,6 +1,70 @@
 // API definitions
 //
 
+const API_BASE = 'modules/';
+
+const API = {
+    async call(module, action, method = 'GET', data = null) {
+        const url = `${API_BASE}api_handler.php?module=${module}&action=${action}`;
+        const options = {
+            method: method,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        };
+
+        if (data) {
+            if (method === 'POST' || method === 'PUT') {
+                options.body = JSON.stringify(data);
+            } else {
+                const params = new URLSearchParams(data).toString();
+                const separator = url.includes('?') ? '&' : '?';
+                return fetch(`${url}${separator}${params}`, options).then(async (response) => {
+                    const text = await response.text();
+                    try {
+                        const result = JSON.parse(text);
+                        if (!result.success) {
+                            console.error(`API Error (${module}/${action}):`, result.message);
+                        }
+                        return result;
+                    } catch (e) {
+                        console.error('Response is not JSON:', text.substring(0, 200));
+                        return { success: false, message: 'Server returned invalid response: ' + text.substring(0, 100) };
+                    }
+                }).catch((error) => {
+                    console.error(`Fetch Error (${module}/${action}):`, error);
+                    return { success: false, message: 'Network error: ' + error.message };
+                });
+            }
+        }
+
+        try {
+            const response = await fetch(url, options);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const text = await response.text();
+
+            try {
+                const result = JSON.parse(text);
+                if (!result.success) {
+                    console.error(`API Error (${module}/${action}):`, result.message);
+                }
+                return result;
+            } catch (e) {
+                console.error('Response is not JSON:', text.substring(0, 200));
+                return { success: false, message: 'Server returned invalid response: ' + text.substring(0, 100) };
+            }
+        } catch (error) {
+            console.error(`Fetch Error (${module}/${action}):`, error);
+            return { success: false, message: 'Network error: ' + error.message };
+        }
+    }
+};
+
 // employee API
 
 const CustomerAPI = {
