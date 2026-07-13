@@ -94,3 +94,88 @@ async function loadAppData() {
         console.error('Failed to load app data:', error);
     }
 }
+
+// TODO :employee login 
+// document.getElementById('loginForm').addEventListener
+
+
+const savedUser = localStorage.getItem('peoplesBakersUser');
+if (savedUser) {
+    try {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        loadAppData().then(() => renderApp());
+    } catch (e) {
+        localStorage.removeItem('peoplesBakersUser');
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+    }
+} else {
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+}
+
+document.getElementById('logoutFromProfile').addEventListener('click', function() {
+    document.getElementById('profileMenu').classList.remove('active');
+    handleLogout();
+});
+
+
+// Login page tab switching logic
+const tabCustomer = document.getElementById('tabCustomer');
+const tabStaff = document.getElementById('tabStaff');
+
+const viewCustomerLogin = document.getElementById('viewCustomerLogin');
+const viewCustomerRegister = document.getElementById('viewCustomerRegister');
+const viewStaffLogin = document.getElementById('viewStaffLogin');
+
+const linkRegister = document.getElementById('linkRegister');
+const linkBackToLogin = document.getElementById('linkBackToLogin');
+
+// Helper function to clear alert blocks and form inputs upon tab adjustments
+function resetFormViews() {
+    ['customerLoginForm', 'customerRegisterForm', 'loginForm'].forEach(formId => {
+        const form = document.getElementById(formId);
+        if (form) form.reset();
+    });
+    ['customerLoginError', 'regError', 'loginError'].forEach(errId => {
+        const errEl = document.getElementById(errId);
+        if (errEl) errEl.style.display = 'none';
+    });
+}
+
+if (tabCustomer && tabStaff) {
+    // Handle Switch to Customer Login Track
+    tabCustomer.addEventListener('click', function() {
+        resetFormViews();
+        
+        // Apply Active highlighting to Customer tab link
+        tabCustomer.style.borderBottom = '2px solid var(--primary)';
+        tabCustomer.style.color = 'var(--primary)';
+        tabStaff.style.borderBottom = 'none';
+        tabStaff.style.color = 'var(--text-gray)';
+
+        // Toggle Panel Containers
+        viewCustomerLogin.style.display = 'block';
+        viewCustomerRegister.style.display = 'none';
+        viewStaffLogin.style.display = 'none';
+    });
+
+    // Handle Switch to Staff Login Track
+    tabStaff.addEventListener('click', function() {
+        resetFormViews();
+        
+        // Apply Active highlighting to Staff tab link
+        tabStaff.style.borderBottom = '2px solid var(--primary)';
+        tabStaff.style.color = 'var(--primary)';
+        tabCustomer.style.borderBottom = 'none';
+        tabCustomer.style.color = 'var(--text-gray)';
+
+        // Toggle Panel Containers
+        viewStaffLogin.style.display = 'block';
+        viewCustomerLogin.style.display = 'none';
+        viewCustomerRegister.style.display = 'none';
+    });
+}
+
