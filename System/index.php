@@ -150,13 +150,10 @@
   <!-- 2. AUTHENTICATION -->
   <script src="assets/js/auth.js"></script>
 
-  <!-- 3. MODALS -->
-  <script src="assets/js/modals.js"></script>
-
-  <!-- 4. loads online store ui -->
+  <!-- 3. loads online store ui -->
   <script src="assets/js/onlineStore.js"></script>
 
-  <!-- 5. APP (must load last) -->
+  <!-- 4. APP (must load last) -->
   <script src="assets/js/app.js"></script>
 
 </body>
