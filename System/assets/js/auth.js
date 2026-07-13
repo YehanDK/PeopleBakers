@@ -179,3 +179,22 @@ if (tabCustomer && tabStaff) {
     });
 }
 
+// Customer internal link: Toggle from Sign In to Create Account
+if (linkRegister) {
+    linkRegister.addEventListener('click', function(e) {
+        e.preventDefault();
+        resetFormViews();
+        viewCustomerLogin.style.display = 'none';
+        viewCustomerRegister.style.display = 'block';
+    });
+}
+
+// Customer internal link: Toggle from Create Account back to Sign In
+if (linkBackToLogin) {
+    linkBackToLogin.addEventListener('click', function(e) {
+        e.preventDefault();
+        resetFormViews();
+        viewCustomerRegister.style.display = 'none';
+        viewCustomerLogin.style.display = 'block';
+    });
+}
