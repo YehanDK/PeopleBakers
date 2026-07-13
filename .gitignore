@@ -1,0 +1,19 @@
+# Exclude the environment variables file containing database passwords
+.env
+
+# === IDEs and Code Editors ===
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains / PhpStorm
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# === Development Logs & Backups ===
+*.log
+*.bak
+*.swp
