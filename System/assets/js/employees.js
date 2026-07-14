@@ -1,7 +1,3 @@
-// ============================================================
-//  EMPLOYEE MANAGEMENT - Updated for Database Integration
-// ============================================================
-
 let selectedEmpIndex = null;
 
 async function loadEmployees() {
