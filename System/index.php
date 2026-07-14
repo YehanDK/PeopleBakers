@@ -13,7 +13,7 @@
   <div class="login-card">
     <div class="logo">
       <img src="assets/images/peoples-bakers-logo.png" alt="Peoples Bakers Logo" style="height: 80px; border-radius: 50%; object-fit: cover;">
-      <h1>Peoples <span>Bakers</span></h1>
+      <h1>Peoples Bakers</h1>
     </div>
 
     <div class="login-tabs" style="display:flex; margin-bottom:1.5rem; border-bottom:1px solid var(--border-light);">
@@ -61,7 +61,7 @@
           <label><i class="fas fa-lock"></i> Choose Password</label>
           <input type="password" id="regPassword" placeholder="••••••••" required />
         </div>
-        <button type="submit" class="btn-login" style="background:var(--green);">Create Account</button>
+        <button type="submit" class="btn-login">Create Account</button>
         <div id="regError" class="login-error"></div>
       </form>
       <div class="login-hint" style="text-align:center; margin-top:1.2rem;">
@@ -79,12 +79,12 @@
           <label><i class="fas fa-lock"></i> Password</label>
           <input type="password" id="loginPassword" placeholder="Enter your password" required />
         </div>
-        <button type="submit" class="btn-login" style="background:var(--primary-dark);">Staff Sign In</button>
+        <button type="submit" class="btn-login">Staff Sign In</button>
         <div id="loginError" class="login-error">Invalid username or password</div>
       </form>
       <div class="login-hint">
         <strong>Sign in with your employee account.</strong><br />
-        <span style="display:block;font-size:0.75rem;margin-top:0.3rem;color:var(--text-gray);">Use the username and password assigned to your role in the database.</span>
+        <span style="display:block;font-size:0.75rem;margin-top:0.3rem;color:var(--text-gray);">Use the username and password assigned to you.</span>
       </div>
     </div>
 
@@ -95,14 +95,8 @@
   <div id="app">
     <header class="app-header">
       <div class="brand">
-        <svg viewBox="0 0 60 60" fill="none" width="32" height="32">
-          <rect x="4" y="10" width="52" height="40" rx="10" fill="#6b3fa0" />
-          <path d="M18 28L24 20L30 28L36 20L42 28" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="24" cy="38" r="4" fill="#f9c80e" />
-          <circle cx="36" cy="38" r="4" fill="#f9c80e" />
-          <rect x="8" y="8" width="44" height="6" rx="3" fill="#f9c80e" />
-        </svg>
-        <span>Peoples<span>Bakers</span></span>
+        <img src="assets/images/peoples-bakers-logo.png" alt="Peoples Bakers Logo" style="height: 40px; border-radius: 50%; object-fit: cover;">
+        <span>Peoples Bakers</span>
       </div>
       <div class="user-info">
         <span id="userNameDisplay" style="font-weight:500;">Loading user...</span>
