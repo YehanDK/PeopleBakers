@@ -1,11 +1,11 @@
 // user authenticatin logic
 
 let currentUser = null;
-// TODO : employees
+let employees = [];
 let inventoryItems = [];
 // TODO : restockRecords 
 // TODO : suppliers
-// TODO : leaveRequests
+let leaveRequests = [];
 let onlineOrders = [];
 // TODO : inStoreOrders
 let customCakeOrders = [];
@@ -55,7 +55,25 @@ async function loadAppData() {
 
         // TODO : restock api
         // TODO : employees api
+        if (typeof EmployeeAPI !== 'undefined') {
+            const employeesResponse = await EmployeeAPI.list();
+            if (employeesResponse.success) {
+                employees = (employeesResponse.data || []).map(employee => ({
+                    ...employee,
+                    id: String(employee.employee_id ?? employee.id ?? ''),
+                    employee_id: String(employee.employee_id ?? employee.id ?? ''),
+                    name: employee.name || '',
+                    username: employee.username || ''
+                }));
+            }
+        }
         // TODO : Leave API
+        if (typeof LeaveAPI !== 'undefined') {
+            const leaveResponse = await LeaveAPI.list();
+            if (leaveResponse.success) {
+                leaveRequests = leaveResponse.data || [];
+            }
+        }
 
         if (typeof OrdersAPI !== 'undefined') {
             const ordersResponse = await OrdersAPI.list('all');
@@ -96,8 +114,46 @@ async function loadAppData() {
 }
 
 // TODO :employee login 
-// document.getElementById('loginForm').addEventListener
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    const errorEl = document.getElementById('loginError');
 
+    try {
+        const response = await EmployeeAPI.login(username, password);
+
+        if (!response.success) {
+            errorEl.style.display = 'block';
+            errorEl.textContent = response.message || 'Invalid username or password';
+            return;
+        }
+
+        errorEl.style.display = 'none';
+        currentUser = response.data;
+
+        const roleMap = {
+            'salesassistant': 'Sales Assistant',
+            'deliveryemployee': 'Delivery Employee',
+            'inventorymanager': 'Inventory Manager',
+            'employeemanager': 'Employee Manager',
+            'companymanager': 'Company Manager',
+            'financemanager': 'Finance Manager',
+            'salessupervisor': 'Sales Supervisor'
+        };
+        currentUser.displayRole = roleMap[currentUser.role] || currentUser.role;
+
+        localStorage.setItem('peoplesBakersUser', JSON.stringify(currentUser));
+
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        await loadAppData();
+        renderApp();
+    } catch (error) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Network error: ' + error.message;
+    }
+});
 
 const savedUser = localStorage.getItem('peoplesBakersUser');
 if (savedUser) {
