@@ -97,7 +97,15 @@ const OrdersAPI = {
     updateStatus: (order_id, status) => API.call('orders', 'updateStatus', 'POST', { order_id, status }),
 };
 
-// TODO : Restock API
+
+//  Restock APi
+const RestockAPI = {
+    list: () => API.call('restock', 'list'),
+    create: (data) => API.call('restock', 'create', 'POST', data),
+    update: (data) => API.call('restock', 'update', 'POST', data),
+    delete: (id) => API.call('restock', 'delete', 'POST', { id }),
+    suppliers: () => API.call('restock', 'suppliers'),
+};
 // TODO : Leave API
 const LeaveAPI = {
     list: (employee_id) => API.call('leave', 'list', 'GET', { employee_id }),

@@ -6,14 +6,17 @@ let inventoryItems = [];
 // TODO : restockRecords 
 // TODO : suppliers
 let leaveRequests = [];
+let restockRecords = [];
+let suppliers = [];
+// TODO : leaveRequests
 let onlineOrders = [];
-// TODO : inStoreOrders
+let inStoreOrders = [];
 let customCakeOrders = [];
 let customCakeRequests = [];
 let customers = [];
-// TODO : stockAlerts = [];
+let stockAlerts = [];
 let instoreCart = [];
-// TODO : inStoreOrderCounter = 1;
+let inStoreOrderCounter = 1;
 let customCakeCounter = 1;
 
 function handleLogout() {
@@ -53,7 +56,28 @@ async function loadAppData() {
         }
 
 
-        // TODO : restock api
+        if (typeof RestockAPI !== 'undefined') {
+            const restockResponse = await RestockAPI.list();
+            if (restockResponse.success) {
+                restockRecords = (restockResponse.data || []).map(record => ({
+                    ...record,
+                    id: String(record.restock_id ?? record.id ?? ''),
+                    product_id: record.product_id || null,
+                    supplier_id: record.supplier_id || null,
+                    item: record.product_name || record.item || '',
+                    supplier: record.supplier_name || record.supplier || '',
+                    qty: Number(record.quantity || record.qty || 0),
+                    unitCost: Number(record.unit_cost || record.unitCost || 0),
+                    date: record.restock_date || record.date || '',
+                    notes: record.notes || '',
+                }));
+            }
+
+            const suppliersResponse = await RestockAPI.suppliers();
+            if (suppliersResponse.success) {
+                suppliers = suppliersResponse.data || [];
+            }
+        }
         // TODO : employees api
         if (typeof EmployeeAPI !== 'undefined') {
             const employeesResponse = await EmployeeAPI.list();
