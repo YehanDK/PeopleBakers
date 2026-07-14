@@ -43,7 +43,8 @@ class EmployeesAPI {
     }
     
     public function get() {
-        $id = $_GET['id'] ?? $_POST['id'] ?? 0;
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $_GET['id'] ?? $_POST['id'] ?? ($input['id'] ?? 0);
         if (!$id) {
             return $this->handler->sendResponse(false, null, 'Employee ID required');
         }
@@ -107,6 +108,15 @@ class EmployeesAPI {
         }
         
         if (isset($data['password']) && !empty($data['password'])) {
+            // If a current_password was supplied (e.g. from the "Change Password" screen), verify it first
+            if (isset($data['current_password'])) {
+                $check = $this->pdo->prepare("SELECT password FROM employees WHERE employee_id = ?");
+                $check->execute([$id]);
+                $existing = $check->fetch();
+                if (!$existing || $existing['password'] !== $data['current_password']) {
+                    return $this->handler->sendResponse(false, null, 'Current password is incorrect');
+                }
+            }
             $fields[] = "password = ?";
             $params[] = $data['password'];
         }
@@ -128,19 +138,29 @@ class EmployeesAPI {
     }
     
     public function delete() {
-        $id = $_GET['id'] ?? $_POST['id'] ?? 0;
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $_GET['id'] ?? $_POST['id'] ?? ($input['id'] ?? 0);
         
         if (!$id) {
             return $this->handler->sendResponse(false, null, 'Employee ID required');
         }
         
-        $stmt = $this->pdo->prepare("DELETE FROM employees WHERE employee_id = ?");
-        $result = $stmt->execute([$id]);
-        
-        if ($result) {
-            $this->handler->sendResponse(true, null, 'Employee deleted successfully');
-        } else {
-            $this->handler->sendResponse(false, null, 'Failed to delete employee');
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM employees WHERE employee_id = ?");
+            $result = $stmt->execute([$id]);
+
+            if ($result) {
+                $this->handler->sendResponse(true, null, 'Employee deleted successfully');
+            } else {
+                $this->handler->sendResponse(false, null, 'Failed to delete employee');
+            }
+        } catch (Exception $e) {
+            // Foreign key constraint (e.g. existing leave requests or delivery assignments) blocks the delete
+            if (strpos($e->getMessage(), 'foreign key') !== false || strpos($e->getMessage(), 'FOREIGN KEY') !== false || strpos($e->getMessage(), 'a foreign key constraint fails') !== false) {
+                $this->handler->sendResponse(false, null, 'Cannot delete this employee: they have existing leave requests, deliveries, or salary records linked to them. Remove or reassign those records first.');
+            } else {
+                $this->handler->sendResponse(false, null, 'Failed to delete employee: ' . $e->getMessage());
+            }
         }
     }
 }
