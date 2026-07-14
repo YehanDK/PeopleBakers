@@ -363,10 +363,34 @@
   <!-- 2. AUTHENTICATION -->
   <script src="assets/js/auth.js"></script>
 
-  <!-- 3. loads online store ui -->
+  <!-- 3. DASHBOARDS -->
+  <script src="assets/js/dashboards.js"></script>
+
+  <!-- 4. PROFILE -->
+  <script src="assets/js/profile.js"></script>
+
+  <!-- 5. INVENTORY -->
+  <script src="assets/js/inventory.js"></script>
+
+  <!-- 6. EMPLOYEES -->
+  <script src="assets/js/employees.js"></script>
+
+  <!-- 7. ORDERS -->
+  <script src="assets/js/orders.js"></script>
+
+  <!-- 8. CAKES -->
+  <script src="assets/js/cakes.js"></script>
+
+  <!-- 9. REPORTS -->
+  <script src="assets/js/reports.js"></script>
+
+  <!-- 10. MODALS -->
+  <script src="assets/js/modals.js"></script>
+
+  <!-- 11. loads online store ui -->
   <script src="assets/js/onlineStore.js"></script>
 
-  <!-- 4. APP (must load last) -->
+  <!-- 12. APP (must load last) -->
   <script src="assets/js/app.js"></script>
 
 </body>
