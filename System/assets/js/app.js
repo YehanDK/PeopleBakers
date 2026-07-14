@@ -21,13 +21,120 @@ const ROLE_CONFIG = {
       'order-history': renderCustomerOrderHistory,
       'customer-profile': renderCustomerProfileTab,
     }
+  }, 
+  // internal user render maps
+
+  salesassistant: {
+    label: 'Sales Assistant',
+    menu: [
+      { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'online-orders', icon: 'fa-truck', label: 'Online Orders' },
+      { id: 'instore-orders', icon: 'fa-store', label: 'In-Store Orders' },
+      { id: 'custom-cake', icon: 'fa-cake-candles', label: 'Custom Cakes' },
+      { id: 'manual-request', icon: 'fa-pen', label: 'Manual Request' },
+    ],
+    renderMap: {
+      'dashboard': renderSalesAssistantDashboard,
+      'online-orders': renderOnlineOrders,
+      'instore-orders': renderInStoreOrders,
+      'custom-cake': renderCustomCakeOrders,
+      'manual-request': renderManualRequest,
+    }
   },
+  deliveryemployee: {
+    label: 'Delivery Employee',
+    menu: [
+      { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'delivery-mgmt', icon: 'fa-truck-fast', label: 'Delivery Management' },
+    ],
+    renderMap: {
+      'dashboard': renderDeliveryEmployeeDashboard,
+      'delivery-mgmt': renderDeliveryManagement,
+    }
+  },
+  inventorymanager: {
+    label: 'Inventory Manager',
+    menu: [
+      { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'inventory', icon: 'fa-boxes-stacked', label: 'Inventory' },
+      { id: 'restock', icon: 'fa-arrows-rotate', label: 'Restock' },
+      { id: 'notifications', icon: 'fa-bell', label: 'Notifications' },
+    ],
+    renderMap: {
+      'dashboard': renderInventoryManagerDashboard,
+      'inventory': renderInventoryManagement,
+      'restock': renderRestockManagement,
+      'notifications': renderStockNotification,
+    }
+  },
+  employeemanager: {
+    label: 'Employee Manager',
+    menu: [
+      { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'add-employee', icon: 'fa-user-plus', label: 'Add Employee' },
+      { id: 'manage-employee', icon: 'fa-user-gear', label: 'Manage Employees' },
+      { id: 'leave-mgmt', icon: 'fa-calendar-check', label: 'Leave Management' },
+    ],
+    renderMap: {
+      'dashboard': renderEmployeeManagerDashboard,
+      'add-employee': renderAddNewEmployee,
+      'manage-employee': renderManageEmployee,
+      'leave-mgmt': renderLeaveManagement,
+    }
+  },
+  companymanager: {
+    label: 'Company Manager',
+    menu: [
+      { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'view-employees', icon: 'fa-users', label: 'View Employees' },
+      { id: 'sales-reports', icon: 'fa-chart-simple', label: 'View Reports' },
+    ],
+    renderMap: {
+      'dashboard': renderCompanyManagerDashboard,
+      'view-employees': renderViewEmployees,
+      'sales-reports': renderViewSalesReports,
+    }
+  },
+  financemanager: {
+    label: 'Finance Manager',
+    menu: [
+      { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'calc-salary', icon: 'fa-calculator', label: 'Calculate Salary' },
+      { id: 'sales-reports', icon: 'fa-chart-simple', label: 'Generate Reports' },
+    ],
+    renderMap: {
+      'dashboard': renderFinanceManagerDashboard,
+      'calc-salary': renderCalculateSalary,
+      'sales-reports': renderGenerateSalesReports,
+    }
+  },
+  salessupervisor: {
+    label: 'Sales Supervisor',
+    menu: [
+      { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { id: 'cake-mgmt', icon: 'fa-cake-candles', label: 'Cake Management' },
+      { id: 'view-cake', icon: 'fa-eye', label: 'View Cake Requests' },
+    ],
+    renderMap: {
+      'dashboard': renderSalesSupervisorDashboard,
+      'cake-mgmt': renderCustomCakeManagement,
+      'view-cake': renderViewCustomCakeRequest,
+    }
+  }
   
-  // TODO : internal user render maps
+};
+
+// create PROFILE_RENDER_MAP
+
+const PROFILE_RENDER_MAP = {
+  'profile-dashboard': renderProfileDashboard,
+  'my-profile': renderMyProfile,
+  'change-password': renderChangePassword,
+  'leave-request': renderLeaveRequest,
+  'leave-status': renderLeaveStatus,
 };
 
 
-// TODO : create PROFILE_RENDER_MAP
 
 async function renderApp() {
   if (!currentUser) return;
