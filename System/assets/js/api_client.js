@@ -1,6 +1,3 @@
-// API definitions
-//
-
 const API_BASE = 'modules/';
 
 const API = {
@@ -14,6 +11,7 @@ const API = {
             }
         };
 
+        //*****somthing wrong**** */
         if (data) {
             if (method === 'POST' || method === 'PUT') {
                 options.body = JSON.stringify(data);
