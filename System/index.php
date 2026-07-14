@@ -51,11 +51,11 @@
         </div>
         <div class="form-group">
           <label><i class="fas fa-phone"></i> Phone Number</label>
-          <input type="text" id="regPhone" placeholder="e.g. 0771234567" />
+          <input type="text" id="regPhone" placeholder="e.g. 0771234567" required/>
         </div>
         <div class="form-group">
           <label><i class="fas fa-map-marker-alt"></i> Delivery Address</label>
-          <input type="text" id="regAddress" placeholder="Enter your delivery neighborhood/street" />
+          <input type="text" id="regAddress" placeholder="Enter your delivery neighborhood/street" required/>
         </div>
         <div class="form-group">
           <label><i class="fas fa-lock"></i> Choose Password</label>
