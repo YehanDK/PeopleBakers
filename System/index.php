@@ -138,6 +138,219 @@
     </div>
   </div>
 
+   <!-- ============================================================ -->
+  <!-- MODALS -->
+  <!-- ============================================================ -->
+
+  <!-- MODAL: Add New Item -->
+  <div class="modal-overlay" id="addItemModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:0.5rem;"></i> Add New Inventory Item</h3>
+        <button class="modal-close" id="closeAddItemModal">&times;</button>
+      </div>
+      <form id="addItemForm">
+        <div class="form-group">
+          <label>Item Name <span style="color:var(--danger);">*</span></label>
+          <input type="text" id="newItemName" placeholder="e.g. Whole Wheat Bread" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price ($) <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="newItemPrice" placeholder="0.00" min="0.01" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Initial Stock <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="newItemStock" placeholder="0" min="0" required />
+          </div>
+        </div>
+        <div class="btn-group">
+          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Add Item</button>
+          <button type="button" class="btn btn-outline" id="cancelAddItemBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Adjust Quantity / Price -->
+  <div class="modal-overlay" id="editItemModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-pen" style="color:var(--primary);margin-right:0.5rem;"></i> Adjust Item</h3>
+        <button class="modal-close" id="closeEditItemModal">&times;</button>
+      </div>
+      <form id="editItemForm">
+        <div class="form-group">
+          <label>Item</label>
+          <input type="text" id="editItemName" disabled style="background:#f0ebf7;color:#555;" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>New Price ($)</label>
+            <input type="number" id="editItemPrice" min="0.01" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>New Quantity</label>
+            <input type="number" id="editItemStock" min="0" required />
+          </div>
+        </div>
+        <div class="btn-group">
+          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update Item</button>
+          <button type="button" class="btn btn-outline" id="cancelEditItemBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Order Details -->
+  <div class="modal-overlay" id="orderDetailsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-invoice" style="color:var(--primary);margin-right:0.5rem;"></i> Order Details</h3>
+        <button class="modal-close" id="closeOrderDetailsModal">&times;</button>
+      </div>
+      <div id="orderDetailsContent">
+        <div class="form-group"><label>Order ID</label><input id="detailOrderId" disabled /></div>
+        <div class="form-row">
+          <div class="form-group"><label>Customer</label><input id="detailCustomer" disabled /></div>
+          <div class="form-group"><label>Status</label><input id="detailStatus" disabled /></div>
+        </div>
+        <div class="form-group"><label>Items</label><textarea id="detailItems" disabled rows="4"></textarea></div>
+        <div class="form-group"><label>Total</label><input id="detailTotal" disabled /></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: View Restock -->
+  <div class="modal-overlay" id="viewRestockModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-eye" style="color:var(--primary);margin-right:0.5rem;"></i> Restock Details</h3>
+        <button class="modal-close" id="closeViewRestockModal">&times;</button>
+      </div>
+      <div id="viewRestockContent"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Edit Restock -->
+  <div class="modal-overlay" id="editRestockModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-edit" style="color:var(--primary);margin-right:0.5rem;"></i> Edit Restock</h3>
+        <button class="modal-close" id="closeEditRestockModal">&times;</button>
+      </div>
+      <form id="editRestockForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Restock ID</label>
+            <input id="editRestockId" disabled style="background:#f0ebf7;color:#555;" />
+          </div>
+          <div class="form-group">
+            <label>Item</label>
+            <input id="editRestockItem" disabled style="background:#f0ebf7;color:#555;" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Supplier</label>
+            <select id="editRestockSupplier"></select>
+          </div>
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="editRestockQty" min="1" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Unit Cost ($)</label>
+            <input type="number" id="editRestockUnitCost" min="0.01" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="editRestockDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="editRestockNotes" rows="3"></textarea>
+        </div>
+        <div class="btn-group">
+          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update Restock</button>
+          <button type="button" class="btn btn-outline" id="cancelEditRestockBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: View Custom Cake -->
+  <div class="modal-overlay" id="viewCakeModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-cake" style="color:var(--primary);margin-right:0.5rem;"></i> Custom Cake Details</h3>
+        <button class="modal-close" id="closeViewCakeModal">&times;</button>
+      </div>
+      <div id="viewCakeContent"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Restock -->
+  <div class="modal-overlay" id="restockModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-archive" style="color:var(--primary);margin-right:0.5rem;"></i> Record Restock</h3>
+        <button class="modal-close" id="closeRestockModalBtn">&times;</button>
+      </div>
+      <form id="restockForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Restock ID</label>
+            <input id="restockId" disabled style="background:#f0ebf7;color:#555;">
+          </div>
+          <div class="form-group">
+            <label>Item <span style="color:var(--danger);">*</span></label>
+            <select id="restockItem" required>
+              <option value="">Select item</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Supplier <span style="color:var(--danger);">*</span></label>
+            <select id="restockSupplier" required>
+              <option value="">Select supplier</option>
+              <option value="Bakery Supply Co.">Bakery Supply Co.</option>
+              <option value="Dairy Distributors">Dairy Distributors</option>
+              <option value="Grain & Mill">Grain & Mill</option>
+              <option value="Sweet Ingredients">Sweet Ingredients</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quantity Received <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="restockQty" placeholder="e.g. 20" min="1" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Unit Cost ($) <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="restockUnitCost" placeholder="e.g. 12.50" min="0.01" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label>Restock Date <span style="color:var(--danger);">*</span></label>
+            <input type="date" id="restockDate" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes (Optional)</label>
+          <textarea id="restockNotes" placeholder="Any additional notes about this restock..."></textarea>
+        </div>
+        <div class="btn-group">
+          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Restock</button>
+          <button type="button" class="btn btn-outline" id="cancelRestockBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ALL MODALS (same as before) -->
 
   <!-- ============================================================ -->
