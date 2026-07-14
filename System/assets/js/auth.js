@@ -3,17 +3,17 @@
 let currentUser = null;
 // TODO : employees
 let inventoryItems = [];
-// TODO : restockRecords 
-// TODO : suppliers
+let restockRecords = [];
+let suppliers = [];
 // TODO : leaveRequests
 let onlineOrders = [];
-// TODO : inStoreOrders
+let inStoreOrders = [];
 let customCakeOrders = [];
 let customCakeRequests = [];
 let customers = [];
-// TODO : stockAlerts = [];
+let stockAlerts = [];
 let instoreCart = [];
-// TODO : inStoreOrderCounter = 1;
+let inStoreOrderCounter = 1;
 let customCakeCounter = 1;
 
 function handleLogout() {
