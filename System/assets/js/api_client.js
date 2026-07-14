@@ -65,7 +65,7 @@ const API = {
     }
 };
 
-// employee API
+// TODO : employee API
 
 const CustomerAPI = {
     login: (email, password) => API.call('customers', 'login', 'POST', { email, password }),
@@ -89,5 +89,6 @@ const OrdersAPI = {
     updateStatus: (order_id, status) => API.call('orders', 'updateStatus', 'POST', { order_id, status }),
 };
 
-// TODO : Restock APi
+// TODO : Restock API
 // TODO : Leave API
+// TODO : salary API
