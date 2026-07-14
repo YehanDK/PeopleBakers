@@ -295,10 +295,39 @@ function closeViewItemModal() {
   }
 }
 
-function openAddItemModal() {
-  document.getElementById('addItemModal').classList.add('active');
-  document.getElementById('addItemForm').reset();
+async function getCategories() {
+
+    const response = await fetch(
+        'modules/products/api.php?action=categories'
+    );
+
+    return await response.json();
+
 }
+async function openAddItemModal() {
+  document.getElementById('addItemForm').reset();
+
+  const categories = await getCategories();
+
+  const select = document.getElementById('newItemCategory');
+
+  select.innerHTML = `
+      <option value="">None</option>
+  `;
+
+  categories.forEach(category => {
+
+      select.innerHTML += `
+          <option value="${category.category_id}">
+              ${category.category_name}
+          </option>
+      `;
+
+  });
+
+  document.getElementById('addItemModal').classList.add('active');
+}
+
 
 function closeAddItemModal() {
   document.getElementById('addItemModal').classList.remove('active');
@@ -318,8 +347,8 @@ async function handleAddItem(e) {
     alert('Item already exists. Use the Adjust function to modify it.');
     return;
   }
-
-  const response = await InventoryAPI.create({ name, price, stock_qty: stock, category_id: null });
+  const category_id = document.getElementById("newItemCategory").value || null;
+  const response = await InventoryAPI.create({ name, price, stock_qty: stock, category_id });
   if (response.success) {
     await loadAppData();
     closeAddItemModal();
