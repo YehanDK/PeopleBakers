@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS orders (
     customer_id INT, -- Can be NULL for walk-in customers
     customer_name VARCHAR(100), -- For walk-in or quick entry
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('Pending', 'Preparing', 'Out for Delivery', 'Delivered', 'Completed', 'Cancelled', 'Rejected') DEFAULT 'Pending',
+    status ENUM('Pending', 'Preparing', 'Ready for Pickup', 'Out for Delivery', 'Delivered', 'Completed', 'Cancelled', 'Rejected') DEFAULT 'Pending',
     total_amount DECIMAL(10, 2) NOT NULL,
     order_type ENUM('Online', 'InStore', 'Custom') NOT NULL,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
@@ -109,9 +109,11 @@ CREATE TABLE IF NOT EXISTS online_orders (
 
 CREATE TABLE IF NOT EXISTS custom_cake_orders (
     order_id INT PRIMARY KEY,
+    phone VARCHAR(20),
     design_details TEXT,
     description TEXT,
     pickup_date DATE,
+    status ENUM('PendingApproval', 'Approved', 'Rejected') DEFAULT 'PendingApproval',
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
 );
 
