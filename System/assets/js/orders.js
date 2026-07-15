@@ -3,7 +3,7 @@
 // ============================================================
 
 function renderInStoreOrders() {
-  const itemOptions = inventoryItems.map(item => `<option value="${item.name}">${item.name} - $${Number(item.price || 0).toFixed(2)}</option>`).join('');
+  const itemOptions = inventoryItems.map(item => `<option value="${item.name}">${item.name} - LKR ${Number(item.price || 0).toFixed(2)}</option>`).join('');
   const cartEmpty = instoreCart.length === 0;
   const cartSummary = cartEmpty ?
     `<div class="text-muted">No items added yet.</div>` :
@@ -23,8 +23,8 @@ function renderInStoreOrders() {
             <tr>
               <td>${line.name}</td>
               <td>${line.qty}</td>
-              <td>$${line.price.toFixed(2)}</td>
-              <td>$${(line.qty * line.price).toFixed(2)}</td>
+              <td>${line.price.toFixed(2)}</td>
+              <td>LKR ${(line.qty * line.price).toFixed(2)}</td>
               <td><button class="btn btn-sm btn-danger" type="button" onclick="removeInStoreCartItem('${line.name}')">Remove</button></td>
             </tr>
           `).join('')}
@@ -37,7 +37,7 @@ function renderInStoreOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>$${o.total.toFixed(2)}</td>
+      <td>LKR ${o.total.toFixed(2)}</td>
       <td><span class="badge badge-green">${o.status || 'Completed'}</span></td>
       <td>${o.date}</td>
       <td>
@@ -71,7 +71,7 @@ function renderInStoreOrders() {
       <div class="instore-order-summary card" style="margin-top:1rem;padding:1rem;">
         <div class="card-header" style="justify-content:space-between;gap:1rem;">
           <h3 style="margin:0;font-size:1rem;">Order Summary</h3>
-          <span>Total: <strong>$${totalAmount}</strong></span>
+          <span>Total: <strong>LKR ${totalAmount}</strong></span>
         </div>
         <div id="instoreCartSummary" style="padding:1rem 0;">${cartSummary}</div>
         <div style="display:flex;justify-content:flex-end;gap:1rem;align-items:center;">
@@ -163,7 +163,7 @@ function filterInStoreOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>$${o.total.toFixed(2)}</td>
+      <td>LKR ${o.total.toFixed(2)}</td>
       <td><span class="badge badge-green">${o.status || 'Completed'}</span></td>
       <td>${o.date}</td>
       <td>
@@ -200,7 +200,7 @@ function viewInStoreOrderDetails(id) {
   document.getElementById('detailCustomer').value = order.customer;
   document.getElementById('detailStatus').value = order.status;
   document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} ($${i.price.toFixed(2)})`).join('\n');
-  document.getElementById('detailTotal').value = `$${order.total.toFixed(2)}`;
+  document.getElementById('detailTotal').value = `LKR ${order.total.toFixed(2)}`;
   document.getElementById('orderDetailsModal').classList.add('active');
 }
 function renderOnlineOrders() {
@@ -208,7 +208,7 @@ function renderOnlineOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>$${o.total.toFixed(2)}</td>
+      <td>LKR ${o.total.toFixed(2)}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Pending' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateOnlineOrderStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -267,7 +267,7 @@ function filterOnlineOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>$${o.total.toFixed(2)}</td>
+      <td>LKR ${o.total.toFixed(2)}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Pending' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateOnlineOrderStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -318,7 +318,7 @@ function viewOnlineOrderDetails(id) {
   document.getElementById('detailCustomer').value = order.customer;
   document.getElementById('detailStatus').value = order.status;
   document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} ($${i.price.toFixed(2)})`).join('\n');
-  document.getElementById('detailTotal').value = `$${order.total.toFixed(2)}`;
+  document.getElementById('detailTotal').value = `LKR ${order.total.toFixed(2)}`;
   document.getElementById('orderDetailsModal').classList.add('active');
 }
 
