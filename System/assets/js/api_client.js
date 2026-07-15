@@ -1,6 +1,3 @@
-// API definitions
-//
-
 const API_BASE = 'modules/';
 
 const API = {
@@ -14,6 +11,7 @@ const API = {
             }
         };
 
+        //*****somthing wrong**** */
         if (data) {
             if (method === 'POST' || method === 'PUT') {
                 options.body = JSON.stringify(data);
@@ -65,7 +63,15 @@ const API = {
     }
 };
 
-// employee API
+// TODO : employee API
+const EmployeeAPI = {
+    login: (username, password) => API.call('employees', 'login', 'POST', { username, password }),
+    list: () => API.call('employees', 'list'),
+    get: (id) => API.call('employees', 'get', 'GET', { id }),
+    create: (data) => API.call('employees', 'create', 'POST', data),
+    update: (data) => API.call('employees', 'update', 'POST', data),
+    delete: (id) => API.call('employees', 'delete', 'POST', { id }),
+};
 
 const CustomerAPI = {
     login: (email, password) => API.call('customers', 'login', 'POST', { email, password }),
@@ -89,5 +95,25 @@ const OrdersAPI = {
     updateStatus: (order_id, status) => API.call('orders', 'updateStatus', 'POST', { order_id, status }),
 };
 
-// TODO : Restock APi
+
+//  Restock APi
+const RestockAPI = {
+    list: () => API.call('restock', 'list'),
+    create: (data) => API.call('restock', 'create', 'POST', data),
+    update: (data) => API.call('restock', 'update', 'POST', data),
+    delete: (id) => API.call('restock', 'delete', 'POST', { id }),
+    suppliers: () => API.call('restock', 'suppliers'),
+};
 // TODO : Leave API
+const LeaveAPI = {
+    list: (employee_id) => API.call('leave', 'list', 'GET', { employee_id }),
+    create: (data) => API.call('leave', 'create', 'POST', data),
+    updateStatus: (leave_id, status) => API.call('leave', 'updateStatus', 'POST', { leave_id, status }),
+};
+// TODO : salary API
+const SalaryAPI = {
+    list: (employee_id) => API.call('salary', 'list', 'GET', { employee_id }),
+    create: (data) => API.call('salary', 'create', 'POST', data),
+    updateStatus: (salary_id, status) => API.call('salary', 'updateStatus', 'POST', { salary_id, status }),
+    delete: (id) => API.call('salary', 'delete', 'POST', { id }),
+};
