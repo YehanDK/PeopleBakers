@@ -508,4 +508,3 @@ async function handleEditRestock(e) {
     alert(response.message || 'Failed to update restock');
   }
 }
-
