@@ -16,8 +16,9 @@ class OrdersAPI {
         // NOTE: o.* already contains o.customer_name. Aliasing c.name as customer_name here
         // used to silently overwrite it with NULL for walk-in/custom orders (no customer_id).
         // COALESCE keeps the walk-in name when there's no linked customer record.
-        $sql = "SELECT o.*, COALESCE(o.customer_name, c.name) as customer_name, cco.phone, cco.design_details, cco.description, cco.pickup_date, cco.status as cake_status FROM orders o
+        $sql = "SELECT o.*, COALESCE(o.customer_name, c.name) as customer_name, COALESCE(oo.delivery_address, c.address) as address, c.phone as customer_phone, cco.phone, cco.design_details, cco.description, cco.pickup_date, cco.status as cake_status FROM orders o
                 LEFT JOIN customers c ON o.customer_id = c.customer_id
+                LEFT JOIN online_orders oo ON o.order_id = oo.order_id
                 LEFT JOIN custom_cake_orders cco ON o.order_id = cco.order_id";
         
         if ($type === 'online') {
@@ -50,8 +51,9 @@ class OrdersAPI {
             return $this->handler->sendResponse(false, null, 'Order ID required');
         }
         
-        $stmt = $this->pdo->prepare("SELECT o.*, COALESCE(o.customer_name, c.name) as customer_name, cco.phone, cco.design_details, cco.description, cco.pickup_date, cco.status as cake_status FROM orders o
+        $stmt = $this->pdo->prepare("SELECT o.*, COALESCE(o.customer_name, c.name) as customer_name, COALESCE(oo.delivery_address, c.address) as address, c.phone as customer_phone, cco.phone, cco.design_details, cco.description, cco.pickup_date, cco.status as cake_status FROM orders o
                                      LEFT JOIN customers c ON o.customer_id = c.customer_id
+                                     LEFT JOIN online_orders oo ON o.order_id = oo.order_id
                                      LEFT JOIN custom_cake_orders cco ON o.order_id = cco.order_id
                                      WHERE o.order_id = ?");
         $stmt->execute([$id]);
@@ -183,6 +185,105 @@ public function create() {
             $this->handler->sendResponse(true, null, 'Custom cake status updated successfully');
         } else {
             $this->handler->sendResponse(false, null, 'Failed to update custom cake status');
+        }
+    }
+
+    // Update custom cake order details (customer_name, design_details, description, pickup_date, status)
+    public function update() {
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $order_id = $data['order_id'] ?? $_GET['id'] ?? 0;
+
+        if (!$order_id) {
+            return $this->handler->sendResponse(false, null, 'Order ID is required');
+        }
+
+        // Fields from orders table
+        $orderFields = [];
+        $orderParams = [];
+        if (isset($data['customer_name'])) {
+            $orderFields[] = 'customer_name = ?';
+            $orderParams[] = $data['customer_name'];
+        }
+
+        // Fields from custom_cake_orders table
+        $cakeFields = [];
+        $cakeParams = [];
+        if (isset($data['design_details'])) {
+            $cakeFields[] = 'design_details = ?';
+            $cakeParams[] = $data['design_details'];
+        }
+        if (isset($data['description'])) {
+            $cakeFields[] = 'description = ?';
+            $cakeParams[] = $data['description'];
+        }
+        if (isset($data['pickup_date'])) {
+            $cakeFields[] = 'pickup_date = ?';
+            $cakeParams[] = $data['pickup_date'];
+        }
+        if (isset($data['phone'])) {
+            $cakeFields[] = 'phone = ?';
+            $cakeParams[] = $data['phone'];
+        }
+        if (isset($data['status'])) {
+            $allowed = ['PendingApproval', 'Approved', 'Rejected'];
+            if (!in_array($data['status'], $allowed)) {
+                return $this->handler->sendResponse(false, null, 'Invalid cake status');
+            }
+            $cakeFields[] = 'status = ?';
+            $cakeParams[] = $data['status'];
+        }
+
+        try {
+            $this->pdo->beginTransaction();
+
+            // Update orders table if customer_name provided
+            if (!empty($orderFields)) {
+                $orderParams[] = $order_id;
+                $stmt = $this->pdo->prepare("UPDATE orders SET " . implode(', ', $orderFields) . " WHERE order_id = ?");
+                $stmt->execute($orderParams);
+            }
+
+            // Update custom_cake_orders table if any cake fields provided
+            if (!empty($cakeFields)) {
+                $cakeParams[] = $order_id;
+                $stmt = $this->pdo->prepare("UPDATE custom_cake_orders SET " . implode(', ', $cakeFields) . " WHERE order_id = ?");
+                $stmt->execute($cakeParams);
+            }
+
+            $this->pdo->commit();
+            $this->handler->sendResponse(true, null, 'Custom cake updated successfully');
+
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            $this->handler->sendResponse(false, null, 'Failed to update custom cake: ' . $e->getMessage());
+        }
+    }
+
+    // Delete an order (and its related records)
+    public function delete() {
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $id = $data['id'] ?? $_GET['id'] ?? 0;
+
+        if (!$id) {
+            return $this->handler->sendResponse(false, null, 'Order ID is required');
+        }
+
+        try {
+            $this->pdo->beginTransaction();
+
+            // payments has no ON DELETE CASCADE, so remove it first
+            $stmt = $this->pdo->prepare("DELETE FROM payments WHERE order_id = ?");
+            $stmt->execute([$id]);
+
+            // order_items, custom_cake_orders cascade automatically
+            $stmt = $this->pdo->prepare("DELETE FROM orders WHERE order_id = ?");
+            $stmt->execute([$id]);
+
+            $this->pdo->commit();
+            $this->handler->sendResponse(true, null, 'Order deleted successfully');
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            $this->handler->sendResponse(false, null, 'Failed to delete order: ' . $e->getMessage());
         }
     }
 }
