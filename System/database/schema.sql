@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS employees (
     phone VARCHAR(20),
     role ENUM('salesassistant', 'deliveryemployee', 'inventorymanager', 'employeemanager', 'companymanager', 'financemanager', 'salessupervisor') NOT NULL,
     address TEXT,
+    basic_salary DECIMAL(10, 2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
