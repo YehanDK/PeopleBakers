@@ -222,39 +222,16 @@ function renderCustomCakeManagement() {
         <tbody id="customCakeBody">${rows || '<tr><td colspan="6" class="text-muted text-center py-2">No approved cakes found.</td></tr>'}</tbody>
       </table>
     </div>
-    <div class="card">
-      <div class="card-header">
-        <h3><i class="fas fa-edit" style="color:var(--primary);margin-right:0.5rem;"></i> Edit Cake</h3>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Select Order</label>
-          <select id="editCakeSelect">
-            ${approvedCakes.map(c => `<option value="${c.id}">${c.id} - ${c.customer}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>New Status</label>
-          <select id="editCakeStatusSelect">
-            <option value="PendingApproval">Pending Approval</option>
-            <option value="Approved" selected>Approved</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
-      </div>
-      <button class="btn btn-success" onclick="saveEditedCake()">Save Changes</button>
-      <button class="btn btn-outline" onclick="cancelEditedCake()">Cancel</button>
-    </div>
   `;
 }
 
 function filterCustomCakes() {
   const search = document.getElementById('cakeSearch').value.toLowerCase();
-  const filtered = approvedCakes.filter(c =>
+  const filtered = customCakeRequests.filter(c => c.status === 'Approved' && (
     String(c.id).toLowerCase().includes(search) ||
     c.customer.toLowerCase().includes(search) ||
     c.design.toLowerCase().includes(search)
-  );
+  ));
   const tbody = document.getElementById('customCakeBody');
   tbody.innerHTML = filtered.map(c => `
     <tr>
@@ -407,6 +384,7 @@ function viewCustomCake(id) {
 }
 
 async function approveCustomCake(id) {
+  const returnTab = currentTab;
   const response = await OrdersAPI.updateCakeStatus(id, 'Approved');
   if (!response.success) {
     alert(response.message || 'Failed to approve custom cake request');
@@ -415,10 +393,11 @@ async function approveCustomCake(id) {
   await loadAppData();
   showToast(`Custom cake ${id} confirmed.`);
   closeViewCakeModal();
-  renderTab('cake-mgmt');
+  renderTab(returnTab);
 }
 
 async function rejectCustomCake(id) {
+  const returnTab = currentTab;
   const response = await OrdersAPI.updateCakeStatus(id, 'Rejected');
   if (!response.success) {
     alert(response.message || 'Failed to reject custom cake request');
@@ -427,7 +406,7 @@ async function rejectCustomCake(id) {
   await loadAppData();
   showToast(`Custom cake ${id} rejected.`);
   closeViewCakeModal();
-  renderTab('cake-mgmt');
+  renderTab(returnTab);
 }
 
 function closeViewCakeModal() {
@@ -435,6 +414,8 @@ function closeViewCakeModal() {
 }
 
 async function deleteCustomCake(id) {
+  // Remember the tab we're deleting from so we return to it after
+  const returnTab = currentTab;
   if (!confirm(`Delete custom cake request ${id}?`)) return;
   const response = await OrdersAPI.delete(id);
   if (!response.success) {
@@ -443,7 +424,7 @@ async function deleteCustomCake(id) {
   }
   await loadAppData();
   showToast(`Custom cake ${id} deleted.`);
-  renderTab('cake-mgmt');
+  renderTab(returnTab);
 }
 
 function renderViewCustomCakeRequest() {
