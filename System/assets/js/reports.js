@@ -156,17 +156,18 @@ async function renderCalculateSalary() {
   return `
     <div class="card"><h3>Calculate Employee Salary</h3>
       <div class="form-group"><label>Employee</label>
-        <select id="salaryEmpSelect">
+        <select id="salaryEmpSelect" onchange="onSalaryEmployeeChange()">
+          <option value="">Select an employee</option>
           ${employees.map(e => `<option value="${e.id}">${e.id} - ${e.name}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>Base Salary ($/year)</label><input id="baseSalary" placeholder="45000.00" value="45000.00" /></div>
-      <div class="form-group"><label>Bonuses ($)</label><input id="bonusAmount" placeholder="2000.00" value="2000.00" /></div>
-      <div class="form-group"><label>Deductions ($)</label><input id="deductionAmount" placeholder="3500.00" value="3500.00" /></div>
+      <div class="form-group"><label>Basic Salary (LKR)</label><input id="baseSalary" placeholder="0.00" value="0.00" readonly /></div>
+      <div class="form-group"><label>Additions / Bonus (LKR)</label><input id="bonusAmount" placeholder="0.00" value="0.00" /></div>
+      <div class="form-group"><label>Deductions (LKR)</label><input id="deductionAmount" placeholder="0.00" value="0.00" /></div>
       <button class="btn" onclick="calculateSalary()">Calculate Salary</button>
       <div id="salaryResult" class="mt-2 order-summary" style="display:none;">
-        <strong>Net Annual Salary: <span id="netSalary"></span></strong>
-        <div class="text-muted">Breakdown: Base <span id="baseDisplay"></span> + Bonus <span id="bonusDisplay"></span> - Deductions <span id="deductionDisplay"></span></div>
+        <strong>Net Salary: <span id="netSalary"></span></strong>
+        <div class="text-muted">Breakdown: Basic <span id="baseDisplay"></span> + Additions <span id="bonusDisplay"></span> - Deductions <span id="deductionDisplay"></span></div>
         <div class="text-muted">Monthly Net: <span id="monthlyNet"></span></div>
         <button class="btn btn-success mt-2" onclick="saveSalary()"><i class="fas fa-save"></i> Save Salary Record</button>
       </div>
@@ -179,6 +180,20 @@ async function renderCalculateSalary() {
       </table>
     </div>
   `;
+}
+
+function onSalaryEmployeeChange() {
+  const id = document.getElementById('salaryEmpSelect').value;
+  const emp = employees.find(e => e.id === id);
+  const baseInput = document.getElementById('baseSalary');
+  if (emp) {
+    baseInput.value = (Number(emp.basic_salary) || 0).toFixed(2);
+  } else {
+    baseInput.value = '0.00';
+  }
+  // Hide any previous calculation result until recalculated
+  const result = document.getElementById('salaryResult');
+  if (result) result.style.display = 'none';
 }
 
 let lastCalculatedNet = 0;
