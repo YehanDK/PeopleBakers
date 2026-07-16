@@ -19,7 +19,7 @@ async function renderManageEmployee() {
             <td><span class="employee-id">${emp.employee_id || emp.id}</span></td>
             <td>${emp.name}</td>
             <td>${emp.role}</td>
-            <td>$${(45000 + index * 5000).toLocaleString()}</td>
+            <td>LKR ${(45000 + index * 5000).toLocaleString()}</td>
             <td><span class="badge badge-green">Active</span></td>
             <td>
                 <button class="btn btn-sm btn-yellow" onclick="editEmployee(${index})"><i class="fas fa-pen"></i></button>
@@ -188,7 +188,7 @@ function filterManageEmployees() {
             <td><span class="employee-id">${emp.employee_id || emp.id}</span></td>
             <td>${emp.name}</td>
             <td>${emp.role}</td>
-            <td>$${(45000 + origIndex * 5000).toLocaleString()}</td>
+            <td>LKR ${(45000 + origIndex * 5000).toLocaleString()}</td>
             <td><span class="badge badge-green">Active</span></td>
             <td>
                 <button class="btn btn-sm btn-yellow" onclick="editEmployee(${origIndex})"><i class="fas fa-pen"></i></button>
