@@ -37,7 +37,12 @@ class EmployeesAPI {
     }
     
     public function list() {
-        $stmt = $this->pdo->query("SELECT employee_id, name, username, email, phone, role, address, created_at FROM employees");
+        $stmt = $this->pdo->query("
+            SELECT e.employee_id, e.name, e.username, e.email, e.phone, e.role, e.address, e.created_at, e.basic_salary,
+                   COALESCE(s.amount, 0) as salary, s.payment_date, s.status as salary_status
+            FROM employees e
+            LEFT JOIN salaries s ON e.employee_id = s.employee_id
+        ");
         $employees = $stmt->fetchAll();
         $this->handler->sendResponse(true, $employees);
     }
@@ -49,7 +54,7 @@ class EmployeesAPI {
             return $this->handler->sendResponse(false, null, 'Employee ID required');
         }
         
-        $stmt = $this->pdo->prepare("SELECT employee_id, name, username, email, phone, role, address, created_at FROM employees WHERE employee_id = ?");
+        $stmt = $this->pdo->prepare("SELECT employee_id, name, username, email, phone, role, address, basic_salary, created_at FROM employees WHERE employee_id = ?");
         $stmt->execute([$id]);
         $employee = $stmt->fetch();
         
@@ -63,7 +68,7 @@ class EmployeesAPI {
     public function create() {
         $input = json_decode(file_get_contents('php://input'), true);
         $data = $input ?: $_POST;
-        
+
         $name = $data['name'] ?? '';
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
@@ -71,19 +76,35 @@ class EmployeesAPI {
         $phone = $data['phone'] ?? '';
         $role = $data['role'] ?? '';
         $address = $data['address'] ?? '';
-        
+
         if (empty($name) || empty($username) || empty($password) || empty($email) || empty($role)) {
             return $this->handler->sendResponse(false, null, 'Missing required fields');
         }
-        
-        $stmt = $this->pdo->prepare("INSERT INTO employees (name, username, password, email, phone, role, address) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $result = $stmt->execute([$name, $username, $password, $email, $phone, $role, $address]);
-        
-        if ($result) {
+
+        // Salary mapping by role
+        $roleSalaries = [
+            'salesassistant' => 25000,
+            'salessupervisor' => 40000,
+            'deliveryemployee' => 30000,
+            'inventorymanager' => 40000,
+            'financemanager' => 50000,
+            'employeemanager' => 50000
+        ];
+
+        $salary = $roleSalaries[$role] ?? 45000;
+
+        try {
+            $this->pdo->beginTransaction();
+
+            $stmt = $this->pdo->prepare("INSERT INTO employees (name, username, password, email, phone, role, address, basic_salary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $username, $password, $email, $phone, $role, $address, $salary]);
             $id = $this->pdo->lastInsertId();
-            $this->handler->sendResponse(true, ['employee_id' => $id], 'Employee created successfully');
-        } else {
-            $this->handler->sendResponse(false, null, 'Failed to create employee');
+
+            $this->pdo->commit();
+            $this->handler->sendResponse(true, ['employee_id' => $id, 'basic_salary' => $salary], 'Employee created successfully');
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            $this->handler->sendResponse(false, null, 'Failed to create employee: ' . $e->getMessage());
         }
     }
     
@@ -98,13 +119,28 @@ class EmployeesAPI {
         
         $fields = [];
         $params = [];
-        
+
+        $roleSalaries = [
+            'salesassistant' => 25000,
+            'salessupervisor' => 40000,
+            'deliveryemployee' => 30000,
+            'inventorymanager' => 40000,
+            'financemanager' => 50000,
+            'employeemanager' => 50000
+        ];
+
         $allowed = ['name', 'username', 'email', 'phone', 'role', 'address'];
         foreach ($allowed as $field) {
             if (isset($data[$field])) {
                 $fields[] = "$field = ?";
                 $params[] = $data[$field];
             }
+        }
+
+        // If the role changed, keep basic_salary in sync with the role's salary
+        if (isset($data['role'])) {
+            $fields[] = "basic_salary = ?";
+            $params[] = $roleSalaries[$data['role']] ?? 45000;
         }
         
         if (isset($data['password']) && !empty($data['password'])) {
