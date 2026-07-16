@@ -199,7 +199,7 @@ function viewInStoreOrderDetails(id) {
   document.getElementById('detailOrderId').value = order.id;
   document.getElementById('detailCustomer').value = order.customer;
   document.getElementById('detailStatus').value = order.status;
-  document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} ($${i.price.toFixed(2)})`).join('\n');
+  document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} (LKR ${i.price.toFixed(2)})`).join('\n');
   document.getElementById('detailTotal').value = `LKR ${order.total.toFixed(2)}`;
   document.getElementById('orderDetailsModal').classList.add('active');
 }
@@ -317,7 +317,7 @@ function viewOnlineOrderDetails(id) {
   document.getElementById('detailOrderId').value = order.id;
   document.getElementById('detailCustomer').value = order.customer;
   document.getElementById('detailStatus').value = order.status;
-  document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} ($${i.price.toFixed(2)})`).join('\n');
+  document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} (LKR ${i.price.toFixed(2)})`).join('\n');
   document.getElementById('detailTotal').value = `LKR ${order.total.toFixed(2)}`;
   document.getElementById('orderDetailsModal').classList.add('active');
 }
@@ -330,11 +330,9 @@ function renderDeliveryManagement() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>${o.address}</td>
+      <td>${o.customer_phone || o.phone || 'N/A'}</td>
+      <td>${o.address || 'N/A'}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
-      <td>
-        <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
-      </td>
     </tr>
   `).join('');
 
@@ -364,7 +362,7 @@ function renderDeliveryManagement() {
       </div>
       <button class="btn" onclick="updateDeliveryFromSelect()"><i class="fas fa-sync"></i> Update Status</button>
       <table class="mt-2">
-        <tr><th>Order ID</th><th>Customer</th><th>Address</th><th>Status</th><th>Action</th></tr>
+        <tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Address</th><th>Status</th></tr>
         <tbody id="deliveryBody">${rows}</tbody>
       </table>
     </div>
@@ -383,11 +381,9 @@ function filterDeliveryOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>${o.address}</td>
+      <td>${o.customer_phone || o.phone || 'N/A'}</td>
+      <td>${o.address || 'N/A'}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
-      <td>
-        <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
-      </td>
     </tr>
   `).join('') || '<tr><td colspan="5" class="text-muted text-center py-2">No deliveries found matching your search.</td></tr>';
 }
