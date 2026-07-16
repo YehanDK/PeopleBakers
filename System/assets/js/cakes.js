@@ -45,7 +45,6 @@ function renderCustomCakeOrders() {
         <h3><i class="fas fa-cake-candles" style="color:var(--primary);margin-right:0.5rem;"></i> Approved Custom Cakes</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
           <input class="search-box" placeholder="Search by customer or design..." id="cakeOrderSearch" oninput="filterCustomCakeOrders()" />
-          <button class="btn btn-success" onclick="renderTab('manual-request')"><i class="fas fa-plus"></i> New Request</button>
         </div>
       </div>
       <table>
