@@ -292,10 +292,24 @@ async function updateOnlineOrderStatusFromSelect() {
 async function updateOnlineOrderStatus(id) {
   const order = onlineOrders.find(o => String(o.id) === String(id));
   if (!order) return;
-  const statuses = ['Pending', 'Preparing', 'Out for Delivery', 'Delivered'];
-  const currentIndex = statuses.indexOf(order.status);
-  if (currentIndex < 3) {
-    const nextStatus = statuses[currentIndex + 1];
+
+  // Only advance through the statuses listed in the "New Status" combobox on this tab,
+  // so the action button stays consistent with the available options (e.g. Pending, Preparing).
+  const statusSelect = document.getElementById('updateOnlineOrderStatus');
+  const allowedStatuses = statusSelect
+    ? Array.from(statusSelect.options).map(opt => opt.value)
+    : ['Pending', 'Preparing'];
+
+  const currentIndex = allowedStatuses.indexOf(order.status);
+
+  // Order is already in a later stage than this tab can handle (e.g. handed to delivery).
+  if (currentIndex === -1) {
+    showToast(`Order ${id} is already at '${order.status}'. No further update available here.`);
+    return;
+  }
+
+  if (currentIndex < allowedStatuses.length - 1) {
+    const nextStatus = allowedStatuses[currentIndex + 1];
     const response = await OrdersAPI.updateStatus(order.id, nextStatus);
     if (!response.success) {
       alert(response.message || 'Failed to update order status');
@@ -305,7 +319,7 @@ async function updateOnlineOrderStatus(id) {
     showToast(`Order ${id} status updated to ${nextStatus}`);
     renderTab('online-orders');
   } else {
-    showToast(`Order ${id} is already delivered.`);
+    showToast(`Order ${id} is already at '${order.status}'.`);
   }
 }
 
@@ -331,6 +345,9 @@ function renderDeliveryManagement() {
       <td>${o.customer_phone || o.phone || 'N/A'}</td>
       <td>${o.address || 'N/A'}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
+      <td>
+        <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
+      </td>
     </tr>
   `).join('');
 
@@ -359,7 +376,7 @@ function renderDeliveryManagement() {
       </div>
       <button class="btn" onclick="updateDeliveryFromSelect()"><i class="fas fa-sync"></i> Update Status</button>
       <table class="mt-2">
-        <tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Address</th><th>Status</th></tr>
+        <tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr>
         <tbody id="deliveryBody">${rows}</tbody>
       </table>
     </div>
@@ -381,8 +398,11 @@ function filterDeliveryOrders() {
       <td>${o.customer_phone || o.phone || 'N/A'}</td>
       <td>${o.address || 'N/A'}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
+      <td>
+        <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
+      </td>
     </tr>
-  `).join('') || '<tr><td colspan="5" class="text-muted text-center py-2">No deliveries found matching your search.</td></tr>';
+  `).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No deliveries found matching your search.</td></tr>';
 }
 
 async function updateDeliveryStatus(id) {
