@@ -31,7 +31,7 @@ const ROLE_CONFIG = {
       { id: 'online-orders', icon: 'fa-truck', label: 'Online Orders' },
       { id: 'instore-orders', icon: 'fa-store', label: 'In-Store Orders' },
       { id: 'custom-cake', icon: 'fa-cake-candles', label: 'Custom Cakes' },
-      { id: 'manual-request', icon: 'fa-pen', label: 'Manual Request' },
+      { id: 'manual-request', icon: 'fa-pen', label: 'Custom Order Request' },
     ],
     renderMap: {
       'dashboard': renderSalesAssistantDashboard,
@@ -112,7 +112,7 @@ const ROLE_CONFIG = {
     label: 'Sales Supervisor',
     menu: [
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
-      { id: 'cake-mgmt', icon: 'fa-cake-candles', label: 'Cake Management' },
+      { id: 'cake-mgmt', icon: 'fa-cake-candles', label: 'Custom Cake Management' },
       { id: 'view-cake', icon: 'fa-eye', label: 'View Cake Requests' },
     ],
     renderMap: {
