@@ -141,6 +141,11 @@ async function renderApp() {
   const config = ROLE_CONFIG[currentUser.role];
   if (!config) return;
 
+  // Guard: if the active tab doesn't belong to this user's role, fall back to dashboard
+  if (!isProfilePage && !config.renderMap[currentTab]) {
+    currentTab = 'dashboard';
+  }
+
   document.getElementById('userNameDisplay').textContent = currentUser.name;
   document.getElementById('userRoleDisplay').textContent = config.label;
 
@@ -196,6 +201,12 @@ function renderTab(tabId) {
 async function renderContent() {
   if (!currentUser) return;
   const config = ROLE_CONFIG[currentUser.role];
+  if (!config) return;
+
+  // Guard: if the active tab doesn't belong to this user's role, fall back to dashboard
+  if (!isProfilePage && !config.renderMap[currentTab]) {
+    currentTab = 'dashboard';
+  }
 
   let content;
   let title;
