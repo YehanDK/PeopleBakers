@@ -140,27 +140,29 @@ class EmployeesAPI {
     public function delete() {
         $input = json_decode(file_get_contents('php://input'), true);
         $id = $_GET['id'] ?? $_POST['id'] ?? ($input['id'] ?? 0);
-        
+
         if (!$id) {
             return $this->handler->sendResponse(false, null, 'Employee ID required');
         }
-        
-        try {
-            $stmt = $this->pdo->prepare("DELETE FROM employees WHERE employee_id = ?");
-            $result = $stmt->execute([$id]);
 
-            if ($result) {
-                $this->handler->sendResponse(true, null, 'Employee deleted successfully');
-            } else {
-                $this->handler->sendResponse(false, null, 'Failed to delete employee');
-            }
+        try {
+            $this->pdo->beginTransaction();
+
+            // Remove related records that reference this employee so the
+            // foreign key constraints don't block the delete.
+            $this->pdo->prepare("DELETE FROM leaves WHERE employee_id = ?")->execute([$id]);
+            $this->pdo->prepare("DELETE FROM salaries WHERE employee_id = ?")->execute([$id]);
+            $this->pdo->prepare("DELETE FROM delivery_info WHERE delivery_employee_id = ?")->execute([$id]);
+
+            $stmt = $this->pdo->prepare("DELETE FROM employees WHERE employee_id = ?");
+            $stmt->execute([$id]);
+
+            // If the employee had no row (already gone), rowCount is 0 but that's fine.
+            $this->pdo->commit();
+            $this->handler->sendResponse(true, null, 'Employee deleted successfully');
         } catch (Exception $e) {
-            // Foreign key constraint (e.g. existing leave requests or delivery assignments) blocks the delete
-            if (strpos($e->getMessage(), 'foreign key') !== false || strpos($e->getMessage(), 'FOREIGN KEY') !== false || strpos($e->getMessage(), 'a foreign key constraint fails') !== false) {
-                $this->handler->sendResponse(false, null, 'Cannot delete this employee: they have existing leave requests, deliveries, or salary records linked to them. Remove or reassign those records first.');
-            } else {
-                $this->handler->sendResponse(false, null, 'Failed to delete employee: ' . $e->getMessage());
-            }
+            $this->pdo->rollBack();
+            $this->handler->sendResponse(false, null, 'Failed to delete employee: ' . $e->getMessage());
         }
     }
 }
