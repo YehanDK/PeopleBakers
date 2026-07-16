@@ -27,6 +27,10 @@ function handleLogout() {
     // Reset to default Customer Login tab view on logout
     const tabCustomer = document.getElementById('tabCustomer');
     if (tabCustomer) tabCustomer.click();
+
+    // Reset active tab so the next login lands on their own default tab
+    currentTab = 'dashboard';
+    isProfilePage = false;
 }
 
 async function loadAppData() {
@@ -123,7 +127,9 @@ async function loadAppData() {
                     design: order.design_details || order.description || 'Custom cake request',
                     phone: order.phone || 'N/A',
                     description: order.description || order.design_details || 'No description provided',
-                    date: order.date || order.order_date || ''
+                    date: order.date || order.order_date || '',
+                    status: order.cake_status || order.status || 'PendingApproval',
+                    fulfillmentStatus: order.status || 'Pending'
                 }));
                 customCakeCounter = Math.max(1, customCakeRequests.length + 1);
                 inStoreOrderCounter = Math.max(1, inStoreOrders.length + 1);
@@ -169,6 +175,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
         await loadAppData();
+        currentTab = 'dashboard';
+        isProfilePage = false;
         renderApp();
     } catch (error) {
         errorEl.style.display = 'block';
@@ -309,6 +317,7 @@ if (customerLoginForm) {
             
             await loadAppData();
             currentTab = 'online-store'; // Set default view route
+            isProfilePage = false;
             renderApp();
             
         } catch (error) {
