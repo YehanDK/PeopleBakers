@@ -246,8 +246,6 @@ function renderOnlineOrders() {
           <select id="updateOnlineOrderStatus">
             <option value="Pending">Pending</option>
             <option value="Preparing">Preparing</option>
-            <option value="Out for Delivery">Out for Delivery</option>
-            <option value="Delivered">Delivered</option>
           </select>
         </div>
       </div>
@@ -354,7 +352,6 @@ function renderDeliveryManagement() {
         <div class="form-group">
           <label>Update Status To</label>
           <select id="deliveryStatusSelect">
-            <option value="Preparing">Preparing</option>
             <option value="Out for Delivery">Out for Delivery</option>
             <option value="Delivered">Delivered</option>
           </select>
