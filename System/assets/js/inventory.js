@@ -15,7 +15,7 @@ async function renderInventoryManagement() {
     return `<tr>
       <td><strong>${item.name}</strong></td>
       <td>${stock}</td>
-      <td>$${Number(item.price || 0).toFixed(2)}</td>
+      <td>LKR ${Number(item.price || 0).toFixed(2)}</td>
       <td><span class="badge ${statusClass}">${statusText}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewItem(${index})"><i class="fas fa-eye"></i></button>
@@ -144,10 +144,10 @@ function viewRestock(id) {
     </div>
     <div class="form-row">
       <div class="form-group"><label>Quantity</label><input value="${record.qty}" disabled /></div>
-      <div class="form-group"><label>Unit Cost</label><input value="$${record.unitCost.toFixed(2)}" disabled /></div>
+      <div class="form-group"><label>Unit Cost</label><input value="LKR ${record.unitCost.toFixed(2)}" disabled /></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Total Cost</label><input value="$${(record.qty * record.unitCost).toFixed(2)}" disabled /></div>
+      <div class="form-group"><label>Total Cost</label><input value="LKR ${(record.qty * record.unitCost).toFixed(2)}" disabled /></div>
       <div class="form-group"><label>Date</label><input value="${record.date}" disabled /></div>
     </div>
     <div class="form-group"><label>Notes</label><textarea disabled rows="3">${record.notes || 'N/A'}</textarea></div>
@@ -420,8 +420,8 @@ function renderRestockManagement() {
       <td>${r.item}</td>
       <td>${r.supplier}</td>
       <td>${r.qty}</td>
-      <td>$${r.unitCost.toFixed(2)}</td>
-      <td>$${total}</td>
+      <td>LKR ${r.unitCost.toFixed(2)}</td>
+      <td>LKR ${total}</td>
       <td>${r.date}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewRestock('${r.id}')"><i class="fas fa-eye"></i></button>
@@ -463,8 +463,8 @@ function filterRestockRecords() {
       <td>${r.item}</td>
       <td>${r.supplier}</td>
       <td>${r.qty}</td>
-      <td>$${r.unitCost.toFixed(2)}</td>
-      <td>$${total}</td>
+      <td>LKR ${r.unitCost.toFixed(2)}</td>
+      <td>LKR ${total}</td>
       <td>${r.date}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewRestock('${r.id}')"><i class="fas fa-eye"></i></button>
