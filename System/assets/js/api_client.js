@@ -92,9 +92,11 @@ const OrdersAPI = {
     list: (type) => API.call('orders', 'list', 'GET', { type }),
     get: (id) => API.call('orders', 'get', 'GET', { id }),
     create: (data) => API.call('orders', 'create', 'POST', data),
+    update: (data) => API.call('orders', 'update', 'POST', data),
     updateStatus: (order_id, status) => API.call('orders', 'updateStatus', 'POST', { order_id, status }),
+    updateCakeStatus: (order_id, status) => API.call('orders', 'updateCakeStatus', 'POST', { order_id, status }),
+    delete: (id) => API.call('orders', 'delete', 'POST', { id }),
 };
-
 
 //  Restock APi
 const RestockAPI = {
