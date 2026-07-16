@@ -36,7 +36,6 @@ async function renderManageEmployee() {
                 <h3><i class="fas fa-user-gear" style="color:var(--primary);margin-right:0.5rem;"></i> Manage Employees</h3>
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
                     <input class="search-box" placeholder="Search employees..." id="manageEmpSearch" oninput="filterManageEmployees()" />
-                    <button class="btn btn-success" onclick="renderTab('add-employee')"><i class="fas fa-plus"></i> Add Employee</button>
                 </div>
             </div>
             <table>
