@@ -92,7 +92,7 @@ const ROLE_CONFIG = {
     renderMap: {
       'dashboard': renderCompanyManagerDashboard,
       'view-employees': renderViewEmployees,
-      'sales-reports': renderViewSalesReports,
+      'sales-reports': renderReportUIContainer('daily'),
     }
   },
   financemanager: {
@@ -105,7 +105,7 @@ const ROLE_CONFIG = {
     renderMap: {
       'dashboard': renderFinanceManagerDashboard,
       'calc-salary': renderCalculateSalary,
-      'sales-reports': renderGenerateSalesReports,
+      'sales-reports': renderReportUIContainer('daily'),
     }
   },
   salessupervisor: {
