@@ -110,7 +110,7 @@ async function loadAppData() {
                     total: Number(order.total_amount || order.total || 0),
                     status: order.status || 'Pending',
                     date: order.order_date || order.date || '',
-                    order_type: order.order_type || order.type || '',
+                    order_type: (order.order_type || '').toLowerCase(),
                     items: Array.isArray(order.items) ? order.items.map(item => ({
                         ...item,
                         name: item.product_name || item.name || '',
@@ -119,10 +119,19 @@ async function loadAppData() {
                     })) : []
                 }));
 
-                onlineOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'online');
-                inStoreOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'instore');
-                // NOTE: customCakeRequests is built below from custom_cake_orders (single source,
-                // keyed by custom_order_id) so delete/approve/reject target the correct row.
+                onlineOrders = orders.filter(o => o.order_type === 'online');
+                inStoreOrders = orders.filter(o => o.order_type === 'instore');
+                customCakeRequests = orders.filter(o => o.order_type === 'custom').map(order => ({
+                    ...order,
+                    customer: order.customer_name || order.customer,
+                    design: order.design_details || order.description || 'Custom cake request',
+                    phone: order.phone || 'N/A',
+                    description: order.description || order.design_details || 'No description provided',
+                    date: order.date || order.order_date || '',
+                    status: order.cake_status || order.status || 'Pending',
+                    fulfillmentStatus: order.status || 'Pending'
+                }));
+                customCakeCounter = Math.max(1, customCakeRequests.length + 1);
                 inStoreOrderCounter = Math.max(1, inStoreOrders.length + 1);
             }
         }

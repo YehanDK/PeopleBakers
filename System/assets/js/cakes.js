@@ -8,9 +8,12 @@ const CAKE_FULFILLMENT_STATUSES = ['Preparing', 'Ready for Pickup', 'Completed']
 
 // Sales assistants only ever see cakes the supervisor has approved.
 function getVisibleCakeRequests() {
-  return (currentUser && currentUser.role === 'salesassistant')
-    ? customCakeRequests.filter(c => c.status === 'Approved')
-    : customCakeRequests;
+  if (currentUser && currentUser.role === 'salesassistant') {
+    // FIX: Include Approved, Preparing, Ready for Pickup, and Completed
+    const visibleStatuses = ['Approved', 'Preparing', 'Ready for Pickup', 'Completed'];
+    return customCakeRequests.filter(c => visibleStatuses.includes(c.status));
+  }
+  return customCakeRequests;
 }
 
 function fulfillmentBadgeClass(status) {
@@ -436,7 +439,7 @@ async function deleteCustomCake(id) {
 }
 
 function renderViewCustomCakeRequest() {
-  const pendingCakes = customCakeRequests.filter(c => c.status === 'PendingApproval');
+  const pendingCakes = customCakeRequests.filter(c => c.status === 'Pending');
   const rejectedCakes = customCakeRequests.filter(c => c.status === 'Rejected');
 
   let pendingRows = pendingCakes.map(c => `

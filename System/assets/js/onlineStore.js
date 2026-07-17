@@ -309,8 +309,8 @@ function renderCustomerCakeRequest() {
         <textarea id="manualDescription" placeholder="Describe the cake design requirements, custom layers, thematic colors, icing details, etc." rows="4"></textarea>
       </div>
       <div class="form-group">
-        <label>Pickup Date</label>
-        <input type="date" id="manualPickupDate" />
+        <label>Required Pickup Date <span style="color:var(--danger);">*</span></label>
+        <input type="date" id="manualDate" required />
       </div>
       <button class="btn" onclick="submitCustomerCakeRequest()">Submit Request</button>
     </div>
@@ -322,7 +322,7 @@ async function submitCustomerCakeRequest() {
   const design = document.getElementById('manualDesign').value.trim();
   const description = document.getElementById('manualDescription').value.trim();
   const phone = document.getElementById('manualPhone').value.trim();
-  const pickupDate = document.getElementById('manualPickupDate').value;
+  const pickup_date = document.getElementById('manualDate').value;
 
   if (!design) {
     alert('Please enter your requested cake design layout summary.');
@@ -341,7 +341,7 @@ async function submitCustomerCakeRequest() {
     items: [],
     design_details: design,
     description: description || 'No specific descriptions applied.',
-    pickup_date: finalPickupDate
+    pickup_date: pickup_date
   });
 
   if (!response.success) {
@@ -365,12 +365,12 @@ async function renderCustomerOrderHistory() {
 
   // 1. Filter standard storefront online purchases for this customer
   const myOnlineOrders = onlineOrders.filter(order => 
-    order.customer_id && Number(order.customer_id) === currentCustomerId
-  );
+        order.customer_id && Number(order.customer_id) === currentCustomerId
+    );
 
   // 2. Filter custom cake request configurations for this customer
   const myCakeRequests = customCakeRequests.filter(cake => 
-    cake.customer_id && Number(cake.customer_id) === currentCustomerId
+      cake.customer_id && Number(cake.customer_id) === currentCustomerId
   );
 
   // Helper utility to apply context-aware semantic status badges cleanly[cite: 5]
@@ -510,43 +510,33 @@ function renderCustomerProfileTab() {
 
 // Transaction Bridge function transmitting structural profile modifications
 async function saveCustomerProfileChanges(event) {
-  event.preventDefault();
+    event.preventDefault();
+    const name = document.getElementById('profName').value.trim();
+    const email = document.getElementById('profEmail').value.trim();
+    const phone = document.getElementById('profPhone').value.trim();
+    const address = document.getElementById('profAddress').value.trim();
+    const password = document.getElementById('profPassword').value;
 
-  const name = document.getElementById('profName').value.trim();
-  const email = document.getElementById('profEmail').value.trim();
-  const phone = document.getElementById('profPhone').value.trim();
-  const address = document.getElementById('profAddress').value.trim();
-  const password = document.getElementById('profPassword').value;
-
-  if (!name || !email) {
-    alert('Name and Email are mandatory account identifiers.');
-    return;
-  }
-
-  try {
-    const response = await CustomerAPI.update({
-      customer_id: currentUser.customer_id,
-      name,
-      email,
-      phone,
-      address,
-      password
-    });
-
-    if (response.success) {
-      currentUser = response.data;
-      currentUser.displayRole = 'Valued Customer';
-      localStorage.setItem('peoplesBakersUser', JSON.stringify(currentUser));
-
-      showToast('Your profile records have been updated successfully.');
-
-      document.getElementById('userNameDisplay').textContent = currentUser.name;
-      renderTab('customer-profile');
-    } else {
-      alert(response.message || 'Failed to apply modifications.');
+    try {
+        const response = await CustomerAPI.update({
+            customer_id: currentUser.customer_id,
+            name, email, phone, address, password
+        });
+        
+        if (response.success) {
+            // FIX: Ensure currentUser is updated before setting property
+            currentUser = { ...currentUser, name: name, email: email, phone: phone, address: address };
+            currentUser.displayRole = 'Valued Customer'; 
+            
+            localStorage.setItem('peoplesBakersUser', JSON.stringify(currentUser));
+            showToast('Your profile records have been updated successfully.');
+            document.getElementById('userNameDisplay').textContent = currentUser.name;
+            renderTab('customer-profile');
+        } else {
+            alert(response.message || 'Failed to apply modifications.');
+        }
+    } catch (error) {
+        console.error('Profile adjustment error:', error);
+        alert('Logistics endpoint transmission error: ' + error.message);
     }
-  } catch (error) {
-    console.error('Profile adjustment error:', error);
-    alert('Logistics endpoint transmission error: ' + error.message);
-  }
 }
