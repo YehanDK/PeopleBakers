@@ -501,43 +501,33 @@ function renderCustomerProfileTab() {
 
 // Transaction Bridge function transmitting structural profile modifications
 async function saveCustomerProfileChanges(event) {
-  event.preventDefault();
+    event.preventDefault();
+    const name = document.getElementById('profName').value.trim();
+    const email = document.getElementById('profEmail').value.trim();
+    const phone = document.getElementById('profPhone').value.trim();
+    const address = document.getElementById('profAddress').value.trim();
+    const password = document.getElementById('profPassword').value;
 
-  const name = document.getElementById('profName').value.trim();
-  const email = document.getElementById('profEmail').value.trim();
-  const phone = document.getElementById('profPhone').value.trim();
-  const address = document.getElementById('profAddress').value.trim();
-  const password = document.getElementById('profPassword').value;
-
-  if (!name || !email) {
-    alert('Name and Email are mandatory account identifiers.');
-    return;
-  }
-
-  try {
-    const response = await CustomerAPI.update({
-      customer_id: currentUser.customer_id,
-      name,
-      email,
-      phone,
-      address,
-      password
-    });
-
-    if (response.success) {
-      currentUser = response.data;
-      currentUser.displayRole = 'Valued Customer';
-      localStorage.setItem('peoplesBakersUser', JSON.stringify(currentUser));
-
-      showToast('Your profile records have been updated successfully.');
-
-      document.getElementById('userNameDisplay').textContent = currentUser.name;
-      renderTab('customer-profile');
-    } else {
-      alert(response.message || 'Failed to apply modifications.');
+    try {
+        const response = await CustomerAPI.update({
+            customer_id: currentUser.customer_id,
+            name, email, phone, address, password
+        });
+        
+        if (response.success) {
+            // FIX: Ensure currentUser is updated before setting property
+            currentUser = { ...currentUser, name: name, email: email, phone: phone, address: address };
+            currentUser.displayRole = 'Valued Customer'; 
+            
+            localStorage.setItem('peoplesBakersUser', JSON.stringify(currentUser));
+            showToast('Your profile records have been updated successfully.');
+            document.getElementById('userNameDisplay').textContent = currentUser.name;
+            renderTab('customer-profile');
+        } else {
+            alert(response.message || 'Failed to apply modifications.');
+        }
+    } catch (error) {
+        console.error('Profile adjustment error:', error);
+        alert('Logistics endpoint transmission error: ' + error.message);
     }
-  } catch (error) {
-    console.error('Profile adjustment error:', error);
-    alert('Logistics endpoint transmission error: ' + error.message);
-  }
 }
