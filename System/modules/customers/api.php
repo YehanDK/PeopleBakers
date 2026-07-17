@@ -1,102 +1,183 @@
 <?php
+// modules/customers/api.php
+
 class CustomersAPI {
     private $pdo;
-    private $handler; // Added property variable
-
-    // Update constructor to receive the global API Handler gateway
+    private $handler;
+    
     public function __construct($pdo, $handler) {
         $this->pdo = $pdo;
-        $this->handler = $handler; // Bind the handler parameter
+        $this->handler = $handler;
     }
 
+    /**
+     * Authenticates an online store customer using email and password
+     */
     public function login() {
-        $input = json_decode(file_get_contents('php://input'), true) ?: [];
-        
-        $email = $_POST['email'] ?? $input['email'] ?? '';
-        $password = $_POST['password'] ?? $input['password'] ?? '';
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $email = $data['email'] ?? '';
+        $password = $data['password'] ?? '';
 
         if (empty($email) || empty($password)) {
-            $this->handler->sendResponse(false, null, 'Email and password are required.');
-            return; // Ensure execution halts
+            return $this->handler->sendResponse(false, null, 'Email and password are required');
         }
 
-        $stmt = $this->pdo->prepare("SELECT * FROM customers WHERE email = ? AND password = ?");
-        $stmt->execute([$email, $password]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        try {
+            // Target the singular 'Customer' table using the updated column layout
+            $stmt = $this->pdo->prepare("SELECT customer_id, customer_name, customer_email, password, cust_phone_no, customer_address 
+                                         FROM Customer 
+                                         WHERE customer_email = ?");
+            $stmt->execute([$email]);
+            $customer = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user) {
-            unset($user['password']); 
-            $user['role'] = 'customer'; 
-            $this->handler->sendResponse(true, $user, 'Login successful.');
-        } else {
-            $this->handler->sendResponse(false, null, 'Invalid email or password.');
-        }
-    }
+            // Directly evaluate plain-text password to match schema insertions
+            if ($customer && $password === $customer['password']) {
+                unset($customer['password']); // Protect credentials before return
+                
+                // Explicitly inject the customer role identity string for app.js parsing rules
+                $customer['role'] = 'customer'; 
 
-    public function register() {
-        $input = json_decode(file_get_contents('php://input'), true) ?: [];
-        
-        $name = $_POST['name'] ?? $input['name'] ?? '';
-        $email = $_POST['email'] ?? $input['email'] ?? '';
-        $password = $_POST['password'] ?? $input['password'] ?? '';
-        $phone = $_POST['phone'] ?? $input['phone'] ?? '';
-        $address = $_POST['address'] ?? $input['address'] ?? '';
-        
-        if (empty($name) || empty($email) || empty($password)) {
-            $this->handler->sendResponse(false, null, 'Name, email, and password are required.');
-            return;
-        }
+                return $this->handler->sendResponse(true, $customer, 'Login successful');
+            }
 
-        $stmt = $this->pdo->prepare("SELECT customer_id FROM customers WHERE email = ?");
-        $stmt->execute([$email]);
-        if ($stmt->fetch()) {
-            $this->handler->sendResponse(false, null, 'This email is already registered.');
-            return;
-        }
+            return $this->handler->sendResponse(false, null, 'Invalid email or password');
 
-        $stmt = $this->pdo->prepare("INSERT INTO customers (name, email, password, phone, address) VALUES (?, ?, ?, ?, ?)");
-        $success = $stmt->execute([$name, $email, $password, $phone, $address]);
-        
-        if ($success) {
-            $this->handler->sendResponse(true, ['customer_id' => $this->pdo->lastInsertId()], 'Account created successfully!');
-        } else {
-            $this->handler->sendResponse(false, null, 'Database error during registration.');
+        } catch (Exception $e) {
+            return $this->handler->sendResponse(false, null, 'Authentication database error: ' . $e->getMessage());
         }
     }
+    
+    /**
+     * Lists all registered bakery customers
+     */
+    public function list() {
+        try {
+            $sql = "SELECT customer_id, customer_name, customer_email, cust_phone_no, customer_address 
+                    FROM Customer 
+                    ORDER BY customer_name ASC";
+            
+            $stmt = $this->pdo->query($sql);
+            $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $this->handler->sendResponse(true, $customers);
+        } catch (Exception $e) {
+            $this->handler->sendResponse(false, null, 'Failed to fetch customer data: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Retrieves a single customer profile profile by customer_id
+     */
+    public function get() {
+        $id = $_GET['id'] ?? $_POST['id'] ?? 0;
+        if (!$id) {
+            return $this->handler->sendResponse(false, null, 'Customer ID is required');
+        }
+        
+        try {
+            $stmt = $this->pdo->prepare("SELECT customer_id, customer_name, customer_email, cust_phone_no, customer_address 
+                                         FROM Customer 
+                                         WHERE customer_id = ?");
+            $stmt->execute([$id]);
+            $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$customer) {
+                return $this->handler->sendResponse(false, null, 'Customer not found');
+            }
+            
+            $this->handler->sendResponse(true, $customer);
+        } catch (Exception $e) {
+            $this->handler->sendResponse(false, null, 'Database search error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Registers a new customer (Sign Up / Account Creation)
+     */
+    public function create() {
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        
+        $customer_name = $data['customer_name'] ?? '';
+        $customer_email = $data['customer_email'] ?? '';
+        $password = $data['password'] ?? '';
+        $cust_phone_no = $data['cust_phone_no'] ?? null;
+        $customer_address = $data['customer_address'] ?? null;
 
+        if (empty($customer_name) || empty($customer_email) || empty($password)) {
+            return $this->handler->sendResponse(false, null, 'Required configuration fields missing');
+        }
+        
+        try {
+            // Write core profile metrics straight into the singular Customer entity configuration
+            $stmt = $this->pdo->prepare("INSERT INTO Customer (customer_name, customer_email, password, cust_phone_no, customer_address) 
+                                         VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$customer_name, $customer_email, $password, $cust_phone_no, $customer_address]);
+            $customer_id = $this->pdo->lastInsertId();
+            
+            // Automatically initialize a blank Cart for this new customer to support online store operations
+            $stmtCart = $this->pdo->prepare("INSERT INTO Cart (customer_id, total) VALUES (?, 0.00)");
+            $stmtCart->execute([$customer_id]);
+            
+            $this->handler->sendResponse(true, ['customer_id' => $customer_id], 'Customer account registered successfully');
+        } catch (Exception $e) {
+            $this->handler->sendResponse(false, null, 'Registration error occurred: ' . $e->getMessage());
+        }
+    }
+        
+    /**
+     * Updates an active customer's address, phone, name, or email details
+     */
     public function update() {
-        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $customer_id = $data['customer_id'] ?? $_GET['id'] ?? 0;
         
-        $customer_id = $input['customer_id'] ?? '';
-        $name = $input['name'] ?? '';
-        $email = $input['email'] ?? '';
-        $phone = $input['phone'] ?? '';
-        $address = $input['address'] ?? '';
-        $password = $input['password'] ?? '';
-
-        if (empty($customer_id) || empty($name) || empty($email)) {
-            $this->handler->sendResponse(false, null, 'Customer ID, Name, and Email are required.');
-            return;
+        if (!$customer_id) {
+            return $this->handler->sendResponse(false, null, 'Customer ID parameter required');
         }
 
-        if (!empty($password)) {
-            $stmt = $this->pdo->prepare("UPDATE customers SET name = ?, email = ?, phone = ?, address = ?, password = ? WHERE customer_id = ?");
-            $success = $stmt->execute([$name, $email, $phone, $address, $password, $customer_id]);
-        } else {
-            $stmt = $this->pdo->prepare("UPDATE customers SET name = ?, email = ?, phone = ?, address = ? WHERE customer_id = ?");
-            $success = $stmt->execute([$name, $email, $phone, $address, $customer_id]);
+        $fields = [];
+        $params = [];
+
+        if (isset($data['customer_name'])) { $fields[] = 'customer_name = ?'; $params[] = $data['customer_name']; }
+        if (isset($data['customer_email'])) { $fields[] = 'customer_email = ?'; $params[] = $data['customer_email']; }
+        if (isset($data['cust_phone_no'])) { $fields[] = 'cust_phone_no = ?'; $params[] = $data['cust_phone_no']; }
+        if (isset($data['customer_address'])) { $fields[] = 'customer_address = ?'; $params[] = $data['customer_address']; }
+
+        if (empty($fields)) {
+            return $this->handler->sendResponse(false, null, 'No field modifications provided');
         }
 
-        if ($success) {
-            $stmt = $this->pdo->prepare("SELECT * FROM customers WHERE customer_id = ?");
-            $stmt->execute([$customer_id]);
-            $updatedUser = $stmt->fetch(PDO::FETCH_ASSOC);
-            unset($updatedUser['password']);
-            $updatedUser['role'] = 'customer';
+        try {
+            $params[] = $customer_id;
+            $stmt = $this->pdo->prepare("UPDATE Customer SET " . implode(', ', $fields) . " WHERE customer_id = ?");
+            $stmt->execute($params);
+            
+            $this->handler->sendResponse(true, null, 'Customer contact records updated successfully');
+        } catch (Exception $e) {
+            $this->handler->sendResponse(false, null, 'Profile modifications failed to save: ' . $e->getMessage());
+        }
+    }
 
-            $this->handler->sendResponse(true, $updatedUser, 'Profile updated successfully!');
-        } else {
-            $this->handler->sendResponse(false, null, 'Database update failed.');
+    /**
+     * Wipes a customer profile entirely out from the operational ecosystem
+     */
+    public function delete() {
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $id = $data['id'] ?? $_GET['id'] ?? 0;
+
+        if (!$id) {
+            return $this->handler->sendResponse(false, null, 'Customer ID required to complete deletion command');
+        }
+
+        try {
+            // Relational foreign key constraints handle clearing down linked Cart records automatically via ON DELETE CASCADE
+            $stmt = $this->pdo->prepare("DELETE FROM Customer WHERE customer_id = ?");
+            $stmt->execute([$id]);
+
+            $this->handler->sendResponse(true, null, 'Customer profile purged successfully');
+        } catch (Exception $e) {
+            $this->handler->sendResponse(false, null, 'Failed to drop customer record: ' . $e->getMessage());
         }
     }
 }
+?>
