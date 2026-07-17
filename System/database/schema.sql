@@ -128,16 +128,6 @@ CREATE TABLE IF NOT EXISTS payments (
     FOREIGN KEY (order_id) REFERENCES orders(order_id)
 );
 
-CREATE TABLE IF NOT EXISTS delivery_info (
-    delivery_id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT,
-    delivery_employee_id INT,
-    address TEXT,
-    status ENUM('Assigned', 'Picked Up', 'Delivered') DEFAULT 'Assigned',
-    delivery_date TIMESTAMP NULL,
-    FOREIGN KEY (order_id) REFERENCES orders(order_id),
-    FOREIGN KEY (delivery_employee_id) REFERENCES employees(employee_id)
-);
 
 -- ============================================================
 -- HR & FINANCE
