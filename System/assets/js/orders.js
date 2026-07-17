@@ -246,6 +246,10 @@ function renderOnlineOrders() {
           <select id="updateOnlineOrderStatus">
             <option value="Pending">Pending</option>
             <option value="Preparing">Preparing</option>
+            <option value="Ready for Pickup">Ready for Pickup</option>
+            <option value="Out for Delivery">Out for Delivery</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -274,16 +278,19 @@ function filterOnlineOrders() {
     </tr>
   `).join('');
 }
+
 async function updateOnlineOrderStatusFromSelect() {
   const id = document.getElementById('updateOnlineOrderSelect').value;
   const newStatus = document.getElementById('updateOnlineOrderStatus').value;
-  const order = onlineOrders.find(o => String(o.id) === String(id));
-  if (!order) return;
-  const response = await OrdersAPI.updateStatus(order.id, newStatus);
+  
+  // Directly call the API with the selected status
+  const response = await OrdersAPI.updateStatus(id, newStatus);
+  
   if (!response.success) {
     alert(response.message || 'Failed to update order status');
     return;
   }
+  
   await loadAppData();
   showToast(`Order ${id} status updated to ${newStatus}`);
   renderTab('online-orders');

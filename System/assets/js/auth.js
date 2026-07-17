@@ -128,7 +128,7 @@ async function loadAppData() {
                     phone: order.phone || 'N/A',
                     description: order.description || order.design_details || 'No description provided',
                     date: order.date || order.order_date || '',
-                    status: order.cake_status || order.status || 'PendingApproval',
+                    status: order.cake_status || order.status || 'Pending',
                     fulfillmentStatus: order.status || 'Pending'
                 }));
                 customCakeCounter = Math.max(1, customCakeRequests.length + 1);

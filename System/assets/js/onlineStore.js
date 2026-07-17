@@ -308,6 +308,10 @@ function renderCustomerCakeRequest() {
         <label>Description</label>
         <textarea id="manualDescription" placeholder="Describe the cake design requirements, custom layers, thematic colors, icing details, etc." rows="4"></textarea>
       </div>
+      <div class="form-group">
+        <label>Required Pickup Date <span style="color:var(--danger);">*</span></label>
+        <input type="date" id="manualDate" required />
+      </div>
       <button class="btn" onclick="submitCustomerCakeRequest()">Submit Request</button>
     </div>
   `;
@@ -318,6 +322,7 @@ async function submitCustomerCakeRequest() {
   const design = document.getElementById('manualDesign').value.trim();
   const description = document.getElementById('manualDescription').value.trim();
   const phone = document.getElementById('manualPhone').value.trim();
+  const pickup_date = document.getElementById('manualDate').value;
 
   if (!design) {
     alert('Please enter your requested cake design layout summary.');
@@ -332,7 +337,7 @@ async function submitCustomerCakeRequest() {
     items: [],
     design_details: design,
     description: description || 'No specific descriptions applied.',
-    pickup_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Auto-schedule pickup date safely for 7 days out
+    pickup_date: pickup_date
   });
 
   if (!response.success) {
@@ -363,7 +368,7 @@ async function renderCustomerOrderHistory() {
   const myCakeRequests = customCakeRequests.filter(cake => 
       cake.customer_id && Number(cake.customer_id) === currentCustomerId
   );
-  
+
   // Helper utility to apply context-aware semantic status badges cleanly[cite: 5]
   const getStatusBadge = (status) => {
     const s = status.toLowerCase();
