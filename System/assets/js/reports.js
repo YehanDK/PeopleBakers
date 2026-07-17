@@ -10,7 +10,7 @@ function getFilteredSalesSummaryData(duration) {
   // Gracefully fallback to all orders if global state arrays are undefined
   const inStore = typeof inStoreOrders !== 'undefined' ? inStoreOrders : [];
   const online = typeof onlineOrders !== 'undefined' ? onlineOrders : [];
-  const cakes = typeof customCakeRequests !== 'undefined' ? customCakeRequests : [];
+  const cakes = typeof customCakeOrders !== 'undefined' ? customCakeOrders : [];
 
   const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const currentMonthStr = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -85,68 +85,71 @@ function renderReportUIContainer(selectedDuration) {
   if (data.analytics.length > 0) {
     tableRowsHtml = data.analytics.map(item => `
       <tr>
-        <td>${item.id}</td>
-        <td>${item.name}</td>
-        <td>${item.salesCount}</td>
+        <td><span class="employee-id">#PRD-${item.id}</span></td>
+        <td><strong>${item.name}</strong></td>
+        <td>${item.salesCount} units</td>
       </tr>
     `).join('');
   } else {
-    tableRowsHtml = `<tr><td colspan="3" style="color: var(--text-gray); padding: 1rem;">No transactions recorded for this duration window.</td></tr>`;
+    tableRowsHtml = `<tr><td colspan="3" class="text-muted text-center py-2">No transactions recorded for this duration window.</td></tr>`;
   }
 
   return `
-    <div class="report-container" style="background: #ffffff; border-radius: 24px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
-        <div class="report-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+    <!-- Container 1: Sales Summary & Metrics Data -->
+    <div class="card">
+        <div class="report-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
                 <!-- HTML Select Element to control tracking configurations -->
-                <select id="sales-duration-filter" class="duration-select" onchange="handleReportDurationChange(this.value)" style="padding: 8px 16px; font-size: 18px; font-weight: 600; border: none; background-color: #f0f0f2; border-radius: 4px; cursor: pointer;">
+                <select id="sales-duration-filter" class="duration-select" onchange="handleReportDurationChange(this.value)" style="padding: 8px 16px; font-size: 16px; font-weight: 600; border: none; background-color: #f0f0f2; border-radius: 4px; cursor: pointer;">
                     <option value="daily" ${selectedDuration === 'daily' ? 'selected' : ''}>Daily</option>
                     <option value="monthly" ${selectedDuration === 'monthly' ? 'selected' : ''}>Monthly</option>
                 </select>
-                <h2 class="sales-title" style="font-size: 28px; font-weight: bold; color: #000000; margin: 0;">Sales Data</h2>
+                <h2 class="sales-title" style="font-size: 24px; font-weight: bold; color: var(--text-dark); margin: 0;">Sales Summary Data</h2>
             </div>
-            <!-- Generate Report button capability deferred per request instructions -->
-            <button id="btn-generate-report" class="btn-primary-purple" style="background-color: #7B4FB6; color: #ffffff; border: none; padding: 12px 28px; border-radius: 24px; font-size: 18px; font-weight: 500; cursor: pointer;">Generate Report</button>
+            <!-- Generate Report Button -->
+            <button id="btn-generate-report" class="btn"><i class="fas fa-file-invoice"></i> Generate Report</button>
         </div>
 
         <!-- Metric Counter Grid Segment Layout -->
-        <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 48px; padding: 0 20px;">
-            <div class="stat-card" style="flex: 1; text-align: center;">
-                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">In Store Orders</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.inStoreCount} orders </p>
+        <div class="grid-3" style="margin-bottom: 24px;">
+            <div class="stat-card" style="border-left-color: var(--primary);">
+                <h3 style="font-size: 16px; color: var(--text-gray); font-weight: 500; margin-bottom: 8px;">In Store Orders</h3>
+                <p class="num" style="font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0;">${data.inStoreCount} orders</p>
             </div>
-            <div class="stat-card" style="flex: 1; text-align: center;">
-                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">Custom Cake Order</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.cakeCount} orders </p>
+            <div class="stat-card" style="border-left-color: var(--primary);">
+                <h3 style="font-size: 16px; color: var(--text-gray); font-weight: 500; margin-bottom: 8px;">Custom Cake Orders</h3>
+                <p class="num" style="font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0;">${data.cakeCount} orders</p>
             </div>
-            <div class="stat-card" style="flex: 1; text-align: center;">
-                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">Online Orders</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.onlineCount} orders</p>
+            <div class="stat-card" style="border-left-color: var(--primary);">
+                <h3 style="font-size: 16px; color: var(--text-gray); font-weight: 500; margin-bottom: 8px;">Online Orders</h3>
+                <p class="num" style="font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0;">${data.onlineCount} orders</p>
             </div>
         </div>
 
-        <!-- Total Revenue Accumulation Section Display -->
-        <div class="revenue-row" style="margin-bottom: 48px; padding-left: 20px; font-size: 22px; display: flex; gap: 40px;">
-            <span class="lbl-revenue" style="font-weight: bold; color: #000000;">Total Revenue :</span>
-            <span class="val-revenue" style="font-weight: bold; color: #000000;">LKR ${data.totalRevenue.toFixed(2)}</span>
+        <!-- Total Revenue Accumulation Display -->
+        <div class="order-summary" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
+            <span class="lbl-revenue" style="font-weight: 600; color: var(--text-gray); font-size: 1rem;">Total Combined Revenue</span>
+            <span class="val-revenue" style="font-size: 1.4rem; font-weight: 700; color: var(--primary-dark);">LKR ${data.totalRevenue.toFixed(2)}</span>
         </div>
+    </div>
 
-        <!-- Sales Analytics Ranking Display Table Container Area -->
-        <div class="analytics-section" style="margin-top: 24px;">
-            <h3 style="font-size: 22px; font-weight: bold; margin-bottom: 16px; color: #000000;">Sales analytics</h3>
-            <table class="analytics-table" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background-color: #ffffff;">
-                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">Product ID</th>
-                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">Product name</th>
-                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">No of sales</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRowsHtml}
-                </tbody>
-            </table>
+    <!-- Container 2: Re-designed Sales Analytics Table -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3><i class="fas fa-chart-bar" style="color: var(--primary); margin-right: 0.5rem;"></i> Product Sales Analytics</h3>
         </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product ID</th>
+                    <th>Product Name</th>
+                    <th>No of Sales</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRowsHtml}
+            </tbody>
+        </table>
     </div>
   `;
 }
