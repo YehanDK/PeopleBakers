@@ -87,12 +87,14 @@ const ROLE_CONFIG = {
     menu: [
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
       { id: 'view-employees', icon: 'fa-users', label: 'View Employees' },
-      { id: 'sales-reports', icon: 'fa-chart-simple', label: 'View Reports' },
+      { id: 'sales-reports', icon: 'fa-chart-bar', label: 'View Reports' },
+      { id: 'expense-records', icon: 'fa-wallet', label: 'Expense Records' },
     ],
     renderMap: {
       'dashboard': renderCompanyManagerDashboard,
       'view-employees': renderViewEmployees,
       'sales-reports': renderReportUIContainer,
+      'expense-records': renderExpenseRecords,
     }
   },
   financemanager: {
@@ -100,12 +102,14 @@ const ROLE_CONFIG = {
     menu: [
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
       { id: 'calc-salary', icon: 'fa-calculator', label: 'Calculate Salary' },
-      { id: 'sales-reports', icon: 'fa-chart-simple', label: 'Generate Reports' },
+      { id: 'sales-reports', icon: 'fa-chart-bar', label: 'Generate Reports' },
+      { id: 'expense-records', icon: 'fa-wallet', label: 'Expense Records' },
     ],
     renderMap: {
       'dashboard': renderFinanceManagerDashboard,
       'calc-salary': renderCalculateSalary,
       'sales-reports': renderReportUIContainer,
+      'expense-records': renderExpenseRecords,
     }
   },
   salessupervisor: {

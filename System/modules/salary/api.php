@@ -60,14 +60,22 @@ class SalaryAPI {
             $stmt = $this->pdo->prepare("INSERT INTO Salary (emp_id, created_date, base_salary, bonus, total, month) VALUES (?, ?, ?, ?, ?, ?)");
             $result = $stmt->execute([$emp_id, $created_date, $base_salary, $bonus, $total, $month]);
 
-            $this->pdo->commit();
-            
             if ($result) {
                 $id = $this->pdo->lastInsertId();
-                $this->handler->sendResponse(true, ['salary_id' => $id], 'Salary saved successfully');
+                // Automated expense record: 
+                $expStmt = $this->pdo->prepare("INSERT INTO ExpenseRecord (ammount, description, bill_number, date) VALUES (?, ?, ?, ?)");
+                $expStmt->execute([$total, 'employee salary', $id, $created_date]);
+                
+                // commit the data transaction
+                $this->pdo->commit();
+
+
+                $this->handler->sendResponse(true, ['salary_id' => $id], 'Salary saved successfully');   
             } else {
                 $this->handler->sendResponse(false, null, 'Failed to save salary');
             }
+
+            
         } catch (Exception $e) {
             $this->pdo->rollBack();
             $this->handler->sendResponse(false, null, 'Failed to save salary: ' . $e->getMessage());

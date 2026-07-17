@@ -387,6 +387,9 @@
   <!-- 9. REPORTS -->
   <script src="assets/js/reports.js"></script>
 
+  <!-- 10. expense Records -->
+  <script src="assets/js/expenses.js"></script>
+
   <!-- 10. MODALS -->
   <script src="assets/js/modals.js"></script>
 

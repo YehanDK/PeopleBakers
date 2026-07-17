@@ -329,8 +329,6 @@ async function submitCustomerCakeRequest() {
     return;
   }
 
-  // Use the customer-chosen pickup date, or auto-schedule 7 days out if left blank
-  const finalPickupDate = pickupDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const response = await OrdersAPI.create({
     customer_name: currentUser.name,

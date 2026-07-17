@@ -1,23 +1,26 @@
-/////////////////////////////////////////////////////////////////////
-//  REPORTS & CALCULATIONS (UPDATED FOR DYNAMIC SALES DASHBOARD)
+// ============================================================
+//  REPORTS & CALCULATIONS ( Unified & High-Fidelity Printing )
 // ============================================================
 
 /**
  * Aggregates, filters, and sorts sales data based on the chosen duration.
+ * Uses local browser calendar attributes to maintain timezone alignment.
  * @param {string} duration - 'daily' or 'monthly'
  */
 function getFilteredSalesSummaryData(duration) {
-  // Gracefully fallback to all orders if global state arrays are undefined
   const inStore = typeof inStoreOrders !== 'undefined' ? inStoreOrders : [];
   const online = typeof onlineOrders !== 'undefined' ? onlineOrders : [];
   const cakes = typeof customCakeRequests !== 'undefined' ? customCakeRequests : [];
 
-  const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  const currentMonthStr = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
 
-  // Helper logic to check if an order falls within the selected time window
+  const todayStr = `${year}-${month}-${day}`; 
+  const currentMonthStr = `${year}-${month}`;  
+
   const matchesFilter = (order) => {
-    // Detect typical order date fields (date, created_at, or payment_date)
     const orderDate = order.date || order.created_at || order.payment_date || todayStr;
     if (duration === 'monthly') {
       return orderDate.startsWith(currentMonthStr);
@@ -25,21 +28,17 @@ function getFilteredSalesSummaryData(duration) {
     return orderDate.startsWith(todayStr);
   };
 
-  // Filter individual order queues matching timeframe requirements
   const filteredInStore = inStore.filter(matchesFilter);
   const filteredOnline = online.filter(matchesFilter);
   const filteredCakes = cakes.filter(matchesFilter);
 
-  // Calculate aggregate financial revenue metrics across all order streams
   const totalRevenue = [...filteredInStore, ...filteredOnline, ...filteredCakes].reduce(
-    (sum, order) => sum + Number(order.total || order.amount || 0), 0
+    (sum, order) => sum + Number(order.total || order.price || order.amount || 0), 0
   );
 
-  // Analyze individual product transactions and rank popularity metrics
   const productSalesMap = {};
   [...filteredInStore, ...filteredOnline, ...filteredCakes].forEach(order => {
     (order.items || []).forEach(item => {
-      // Use explicit ID or fallback gracefully to product name references
       const pId = item.product_id || item.id || 'N/A';
       const pName = item.name || 'Unknown Bakery Item';
       const qty = Number(item.qty || item.quantity || 0);
@@ -51,110 +50,268 @@ function getFilteredSalesSummaryData(duration) {
     });
   });
 
-  // Sort products from most sold to least sold
-  const sortedAnalytics = Object.values(productSalesMap).sort((a, b) => b.salesCount - a.salesCount);
-
   return {
     inStoreCount: filteredInStore.length,
     onlineCount: filteredOnline.length,
     cakeCount: filteredCakes.length,
     totalRevenue,
-    analytics: sortedAnalytics
+    analytics: Object.values(productSalesMap).sort((a, b) => b.salesCount - a.salesCount)
   };
 }
-//////////////////////////////////////////////////////////////
-// // fake funciton for finance manger to call 
-// function renderGenerateSalesReports() {
-//   return renderReportUIContainer('daily');
-// }
-
-// // for copmany manager
-// function renderViewSalesReports() {
-//   return renderReportUIContainer('daily');
-// }
 
 /**
  * Builds the template string framework dynamically matching UI configurations.
- * @param {string} selectedDuration - 'daily' or 'monthly'
+ * @param {string} selectedDuration - Defaults to 'daily' for initial router navigation
  */
-function renderReportUIContainer(selectedDuration) {
+function renderReportUIContainer(selectedDuration = 'daily') {
+  if (!selectedDuration || selectedDuration === '[object MouseEvent]') {
+    selectedDuration = 'daily';
+  }
+
   const data = getFilteredSalesSummaryData(selectedDuration);
 
-  // Generate individual data rows for the Sales Analytics ranking view
   let tableRowsHtml = '';
   if (data.analytics.length > 0) {
     tableRowsHtml = data.analytics.map(item => `
       <tr>
-        <td>${item.id}</td>
-        <td>${item.name}</td>
-        <td>${item.salesCount}</td>
+        <td><span class="employee-id">#PRD-${item.id}</span></td>
+        <td><strong>${item.name}</strong></td>
+        <td>${item.salesCount} units</td>
       </tr>
     `).join('');
   } else {
-    tableRowsHtml = `<tr><td colspan="3" style="color: var(--text-gray); padding: 1rem;">No transactions recorded for this duration window.</td></tr>`;
+    tableRowsHtml = `<tr><td colspan="3" class="text-muted text-center py-2">No transactions recorded for this duration window.</td></tr>`;
   }
 
   return `
-    <div class="report-container" style="background: #ffffff; border-radius: 24px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
-        <div class="report-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+    <!-- Container 1: Sales Summary & Metrics Data -->
+    <div class="card">
+        <div class="report-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
-                <!-- HTML Select Element to control tracking configurations -->
-                <select id="sales-duration-filter" class="duration-select" onchange="handleReportDurationChange(this.value)" style="padding: 8px 16px; font-size: 18px; font-weight: 600; border: none; background-color: #f0f0f2; border-radius: 4px; cursor: pointer;">
+                <select id="sales-duration-filter" class="duration-select" onchange="handleReportDurationChange(this.value)" style="padding: 8px 16px; font-size: 16px; font-weight: 600; border: none; background-color: #f0f0f2; border-radius: 4px; cursor: pointer;">
                     <option value="daily" ${selectedDuration === 'daily' ? 'selected' : ''}>Daily</option>
                     <option value="monthly" ${selectedDuration === 'monthly' ? 'selected' : ''}>Monthly</option>
                 </select>
-                <h2 class="sales-title" style="font-size: 28px; font-weight: bold; color: #000000; margin: 0;">Sales Data</h2>
+                <h2 class="sales-title" style="font-size: 24px; font-weight: bold; color: var(--text-dark); margin: 0;">Sales Summary Data</h2>
             </div>
-            <!-- Generate Report button capability deferred per request instructions -->
-            <button id="btn-generate-report" class="btn-primary-purple" style="background-color: #7B4FB6; color: #ffffff; border: none; padding: 12px 28px; border-radius: 24px; font-size: 18px; font-weight: 500; cursor: pointer;">Generate Report</button>
+            <!-- Custom Detailed Report Function Call -->
+            <button id="btn-generate-report" class="btn" onclick="printDetailedSalesReport('${selectedDuration}')"><i class="fas fa-file-pdf"></i> Generate Detailed Report</button>
         </div>
 
-        <!-- Metric Counter Grid Segment Layout -->
-        <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 48px; padding: 0 20px;">
-            <div class="stat-card" style="flex: 1; text-align: center;">
-                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">In Store Orders</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.inStoreCount} orders </p>
+        <div class="grid-3" style="margin-bottom: 24px;">
+            <div class="stat-card" style="border-left-color: var(--primary);">
+                <h3 style="font-size: 16px; color: var(--text-gray); font-weight: 500; margin-bottom: 8px;">In Store Orders</h3>
+                <p class="num" style="font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0;">${data.inStoreCount} orders</p>
             </div>
-            <div class="stat-card" style="flex: 1; text-align: center;">
-                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">Custom Cake Order</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.cakeCount} orders </p>
+            <div class="stat-card" style="border-left-color: var(--primary);">
+                <h3 style="font-size: 16px; color: var(--text-gray); font-weight: 500; margin-bottom: 8px;">Custom Cake Orders</h3>
+                <p class="num" style="font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0;">${data.cakeCount} orders</p>
             </div>
-            <div class="stat-card" style="flex: 1; text-align: center;">
-                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">Online Orders</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.onlineCount} orders</p>
+            <div class="stat-card" style="border-left-color: var(--primary);">
+                <h3 style="font-size: 16px; color: var(--text-gray); font-weight: 500; margin-bottom: 8px;">Online Orders</h3>
+                <p class="num" style="font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0;">${data.onlineCount} orders</p>
             </div>
         </div>
 
-        <!-- Total Revenue Accumulation Section Display -->
-        <div class="revenue-row" style="margin-bottom: 48px; padding-left: 20px; font-size: 22px; display: flex; gap: 40px;">
-            <span class="lbl-revenue" style="font-weight: bold; color: #000000;">Total Revenue :</span>
-            <span class="val-revenue" style="font-weight: bold; color: #000000;">LKR ${data.totalRevenue.toFixed(2)}</span>
+        <div class="order-summary" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
+            <span class="lbl-revenue" style="font-weight: 600; color: var(--text-gray); font-size: 1rem;">Total Combined Revenue</span>
+            <span class="val-revenue" style="font-size: 1.4rem; font-weight: 700; color: var(--primary-dark);">LKR ${data.totalRevenue.toFixed(2)}</span>
         </div>
+    </div>
 
-        <!-- Sales Analytics Ranking Display Table Container Area -->
-        <div class="analytics-section" style="margin-top: 24px;">
-            <h3 style="font-size: 22px; font-weight: bold; margin-bottom: 16px; color: #000000;">Sales analytics</h3>
-            <table class="analytics-table" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background-color: #ffffff;">
-                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">Product ID</th>
-                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">Product name</th>
-                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">No of sales</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRowsHtml}
-                </tbody>
-            </table>
+    <!-- Container 2: Re-designed Sales Analytics Table -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3><i class="fas fa-chart-bar" style="color: var(--primary); margin-right: 0.5rem;"></i> Product Sales Analytics</h3>
         </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product ID</th>
+                    <th>Product Name</th>
+                    <th>No of Sales</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRowsHtml}
+            </tbody>
+        </table>
     </div>
   `;
 }
 
 /**
+ * Compiles an isolated document with clean print typography and layouts.
+ * Opens an independent context frame to keep the dashboard state intact.
+ * @param {string} duration - 'daily' or 'monthly'
+ */
+function printDetailedSalesReport(duration) {
+  const now = new Date();
+  const data = getFilteredSalesSummaryData(duration);
+  const totalOrders = data.inStoreCount + data.cakeCount + data.onlineCount;
+  const timeLabel = duration === 'monthly' ? 'Monthly Scope' : 'Daily Scope';
+  
+  let analyticsRows = '';
+  if (data.analytics.length > 0) {
+    analyticsRows = data.analytics.map(item => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-family: monospace; font-size: 14px; color: #4f2e7a;">#PRD-${item.id}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #2d2d3f;"><strong>${item.name}</strong></td>
+        <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #1e1e2a; text-align: right;">${item.salesCount} units</td>
+      </tr>
+    `).join('');
+  } else {
+    analyticsRows = `<tr><td colspan="3" style="padding: 24px; text-align: center; color: #5a5a72;">No item data logged for this context period.</td></tr>`;
+  }
+
+  // Generate document sandbox viewport
+  const printWindow = window.open('', '_blank');
+  
+  printWindow.document.write(`
+    <html>
+    <head>
+        <title>Peoples Bakers - Executive Sales Statement</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+            * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+            body { padding: 40px; color: #1e1e2a; background: #fff; line-height: 1.5; }
+            
+            .report-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #6b3fa0; padding-bottom: 20px; margin-bottom: 30px; }
+            .company-info h1 { font-size: 26px; color: #4f2e7a; font-weight: 700; margin-bottom: 4px; }
+            .company-info p { color: #5a5a72; font-size: 13px; }
+            .report-title { text-align: right; }
+            .report-title h2 { font-size: 20px; color: #2d2d3f; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+            .metadata-badge { display: inline-block; background: #e5def0; color: #4f2e7a; font-weight: 600; font-size: 12px; padding: 4px 12px; border-radius: 4px; margin-top: 6px; text-transform: capitalize; }
+            
+            .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 35px; }
+            .summary-card { border: 1px solid #e4dfed; border-radius: 8px; padding: 16px; background: #fcfaff; }
+            .summary-card .lbl { font-size: 12px; color: #5a5a72; font-weight: 500; text-transform: uppercase; margin-bottom: 6px; }
+            .summary-card .val { font-size: 18px; font-weight: 700; color: #2d2d3f; }
+            
+            .section-title { font-size: 16px; font-weight: 600; color: #4f2e7a; border-bottom: 2px solid #e4dfed; padding-bottom: 8px; margin-bottom: 16px; margin-top: 30px; display: flex; align-items: center; gap: 8px; }
+            
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th { background: #f4f2f9; color: #5a5a72; font-weight: 600; font-size: 12px; text-transform: uppercase; padding: 12px; text-align: left; border-bottom: 2px solid #e4dfed; }
+            
+            .revenue-block { background: #f0ebf7; border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-right: 6px solid #6b3fa0; }
+            .revenue-block span { font-size: 15px; font-weight: 600; color: #5a5a72; }
+            .revenue-block strong { font-size: 24px; font-weight: 700; color: #4f2e7a; }
+            
+            .footer-sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; margin-top: 60px; page-break-inside: avoid; }
+            .sig-box { border-top: 1px dashed #5a5a72; padding-top: 8px; text-align: center; font-size: 13px; color: #5a5a72; font-weight: 500; }
+            
+            @media print {
+                body { padding: 0; }
+                .summary-card { background: #fff !important; }
+                .revenue-block { background: #f4f2f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Report Header Section -->
+        <div class="report-header">
+            <div class="company-info">
+                <h1>PEOPLES BAKERS</h1>
+                <p>Commercial Operations & Financial Ledger Division</p>
+                <p>Generated: ${now.toLocaleDateString()} @ ${now.toLocaleTimeString()}</p>
+            </div>
+            <div class="report-title">
+                <h2>Executive Sales Statement</h2>
+                <span class="metadata-badge">${timeLabel} Target Index</span>
+            </div>
+        </div>
+
+        <!-- Metric Summary Dashboard Row -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="lbl">In-Store Channels</div>
+                <div class="val">${data.inStoreCount} Trans.</div>
+            </div>
+            <div class="summary-card">
+                <div class="lbl">Custom Cake Orders</div>
+                <div class="val">${data.cakeCount} Trans.</div>
+            </div>
+            <div class="summary-card">
+                <div class="lbl">E-Commerce Pipeline</div>
+                <div class="val">${data.onlineCount} Trans.</div>
+            </div>
+            <div class="summary-card" style="border-left: 3px solid #6b3fa0;">
+                <div class="lbl">Total Order Outflow</div>
+                <div class="val">${totalOrders} Batches</div>
+            </div>
+        </div>
+
+        <!-- Section 2: Detailed Performance Summary Matrix -->
+        <div class="section-title">Channel Distribution Breakdown</div>
+        <table style="margin-bottom: 20px;">
+            <thead>
+                <tr>
+                    <th>Fulfillment Channel Identifier</th>
+                    <th>Target Context</th>
+                    <th style="text-align: right;">Total Transactions Logged</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">Physical POS Registers (In-Store)</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Direct Walk-in Retail Inflows</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; text-align: right;"><strong>${data.inStoreCount}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">Baking Custom Workshops</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Decorated & Custom Cake Submissions</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; text-align: right;"><strong>${data.cakeCount}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">Online Storefront Engine</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Digital Logistics Fulfillment Deliveries</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; text-align: right;"><strong>${data.onlineCount}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Section 3: Product Volumetric Ranks Table -->
+        <div class="section-title">Product Movement Rankings (Sales Analytics)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product ID</th>
+                    <th>Product Asset Nomenclature</th>
+                    <th style="text-align: right;">Volume Moved</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${analyticsRows}
+            </tbody>
+        </table>
+
+        <!-- Consolidated Total Financial Value Bar -->
+        <div class="revenue-block">
+            <span>TOTAL REALIZED INFLOW VALUE (LKR)</span>
+            <strong>LKR ${data.totalRevenue.toFixed(2)}</strong>
+        </div>
+
+        <!-- Corporate Audit Signature Grid -->
+        <div class="footer-sig-grid">
+            <div class="sig-box" style="margin-top: 40px;">Report Compiler / Controller</div>
+            <div class="sig-box" style="margin-top: 40px;">Authorized Financial Manager Approval</div>
+        </div>
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  
+  // Wait for rendering styles to catch before initializing window print engine
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 250);
+}
+
+/**
  * Handles structural updates when shifting filter durations.
- * Re-injects component layouts directly into the active dashboard workspace view panel.
- * @param {string} filterValue - The select item configuration payload target ('daily'/'monthly')
  */
 function handleReportDurationChange(filterValue) {
   const pageContentContainer = document.getElementById('pageContent');
@@ -164,15 +321,15 @@ function handleReportDurationChange(filterValue) {
 }
 
 function renderSalesReports() {
-  return renderGenerateSalesReports();
+  return renderReportUIContainer('daily');
 }
 
-///////////////////////////////////////////////////////////////////////
+// ============================================================
 //  SALARY PROCESSING FUNCTIONALITIES (UNMODIFIED)
+// ============================================================
 async function renderCalculateSalary() {
   const salaryResponse = await SalaryAPI.list();
   const salaryHistory = salaryResponse.success ? salaryResponse.data : [];
-
   let historyRows = salaryHistory.map(s => `
     <tr>
       <td>${s.employee_name || s.employee_id}</td>
@@ -219,7 +376,6 @@ function onSalaryEmployeeChange() {
   } else {
     baseInput.value = '0.00';
   }
-  // Hide any previous calculation result until recalculated
   const result = document.getElementById('salaryResult');
   if (result) result.style.display = 'none';
 }
@@ -250,19 +406,16 @@ async function saveSalary() {
     alert('Please calculate a valid salary first.');
     return;
   }
-
   const response = await SalaryAPI.create({
     employee_id,
     amount: lastCalculatedNet,
     payment_date: new Date().toISOString().split('T')[0],
     status: 'Pending',
   });
-
   if (!response.success) {
     alert(response.message || 'Failed to save salary record');
     return;
   }
-
   showToast('Salary record saved successfully.');
   renderTab('calc-salary');
 }
