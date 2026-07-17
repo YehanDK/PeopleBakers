@@ -11,22 +11,24 @@ class OrdersAPI {
     }
 
     public function list() {
-        $type = $_GET['type'] ?? $_POST['type'] ?? 'all';
-        
-        $sql = "SELECT o.order_id, o.order_date, o.total, o.status, 
-                       COALESCE(c.customer_name, iso.customer_name, co.custome_name) AS customer_name,
-                       c.customer_address, c.cust_phone_no, co.design_details, co.description, 
-                       co.requested_date, o.status as cake_status,
-                       CASE 
-                           WHEN iso.order_id IS NOT NULL THEN 'InStore'
-                           WHEN oo.order_id IS NOT NULL THEN 'Online'
-                           WHEN co.order_id IS NOT NULL THEN 'Custom'
-                       END AS order_type
-                FROM `Order` o
-                LEFT JOIN InStoreOrder iso ON o.order_id = iso.order_id
-                LEFT JOIN OnlineOrder oo ON o.order_id = oo.order_id
-                LEFT JOIN CakeOrder co ON o.order_id = co.order_id
-                LEFT JOIN Customer c ON (oo.customer_id = c.customer_id OR co.customer_id = c.customer_id)";
+    $type = $_GET['type'] ?? $_POST['type'] ?? 'all';
+    
+    // FIX: Use lowercase literals to match JavaScript filter logic
+    $sql = "SELECT o.order_id, o.order_date, o.total, o.status, 
+                   COALESCE(c.customer_name, iso.customer_name, co.custome_name) AS customer_name,
+                   c.customer_id, c.customer_address, c.cust_phone_no, co.design_details, co.description, 
+                   co.requested_date, o.status as cake_status,
+                   CASE 
+                       WHEN iso.order_id IS NOT NULL THEN 'instore'
+                       WHEN oo.order_id IS NOT NULL THEN 'online'
+                       WHEN co.order_id IS NOT NULL THEN 'custom'
+                       ELSE 'online' 
+                   END AS order_type
+            FROM `Order` o
+            LEFT JOIN InStoreOrder iso ON o.order_id = iso.order_id
+            LEFT JOIN OnlineOrder oo ON o.order_id = oo.order_id
+            LEFT JOIN CakeOrder co ON o.order_id = co.order_id
+            LEFT JOIN Customer c ON (oo.customer_id = c.customer_id OR co.customer_id = c.customer_id)";
 
         if ($type === 'online') $sql .= " WHERE oo.order_id IS NOT NULL";
         elseif ($type === 'instore') $sql .= " WHERE iso.order_id IS NOT NULL";
@@ -36,15 +38,13 @@ class OrdersAPI {
         $orders = $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         
         foreach ($orders as &$order) {
-            // FIX: Added oi.product_id to the field list
             $stmt = $this->pdo->prepare("SELECT oi.product_id, oi.quantity, oi.total AS price, p.product_name FROM OrderItem oi 
-                                         LEFT JOIN Product p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
+                                        LEFT JOIN Product p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
             $stmt->execute([$order['order_id']]);
             $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
         $this->handler->sendResponse(true, $orders);
     }
-
     public function get() {
         $id = $_GET['id'] ?? $_POST['id'] ?? 0;
         if (!$id) return $this->handler->sendResponse(false, null, 'Order ID required');

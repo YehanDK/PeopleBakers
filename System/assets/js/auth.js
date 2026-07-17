@@ -110,7 +110,7 @@ async function loadAppData() {
                     total: Number(order.total_amount || order.total || 0),
                     status: order.status || 'Pending',
                     date: order.order_date || order.date || '',
-                    order_type: order.order_type || order.type || '',
+                    order_type: (order.order_type || '').toLowerCase(),
                     items: Array.isArray(order.items) ? order.items.map(item => ({
                         ...item,
                         name: item.product_name || item.name || '',
@@ -119,9 +119,9 @@ async function loadAppData() {
                     })) : []
                 }));
 
-                onlineOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'online');
-                inStoreOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'instore');
-                customCakeRequests = orders.filter(order => (order.order_type || '').toLowerCase() === 'custom').map(order => ({
+                onlineOrders = orders.filter(o => o.order_type === 'online');
+                inStoreOrders = orders.filter(o => o.order_type === 'instore');
+                customCakeRequests = orders.filter(o => o.order_type === 'custom').map(order => ({
                     ...order,
                     customer: order.customer_name || order.customer || 'Guest Customer',
                     design: order.design_details || order.description || 'Custom cake request',

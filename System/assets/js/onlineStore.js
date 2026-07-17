@@ -356,14 +356,14 @@ async function renderCustomerOrderHistory() {
 
   // 1. Filter standard storefront online purchases for this customer
   const myOnlineOrders = onlineOrders.filter(order => 
-    order.customer_id && Number(order.customer_id) === currentCustomerId
-  );
+        order.customer_id && Number(order.customer_id) === currentCustomerId
+    );
 
   // 2. Filter custom cake request configurations for this customer
   const myCakeRequests = customCakeRequests.filter(cake => 
-    cake.customer_id && Number(cake.customer_id) === currentCustomerId
+      cake.customer_id && Number(cake.customer_id) === currentCustomerId
   );
-
+  
   // Helper utility to apply context-aware semantic status badges cleanly[cite: 5]
   const getStatusBadge = (status) => {
     const s = status.toLowerCase();
