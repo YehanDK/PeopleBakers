@@ -3,7 +3,7 @@
 
 class OrdersAPI {
     private $pdo;
-    private $handler;
+    private $heading;
 
     public function __construct($pdo, $handler) {
         $this->pdo = $pdo;
@@ -36,7 +36,8 @@ class OrdersAPI {
         $orders = $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         
         foreach ($orders as &$order) {
-            $stmt = $this->pdo->prepare("SELECT oi.quantity, oi.total AS price, p.product_name FROM OrderItem oi 
+            // FIX: Added oi.product_id to the field list
+            $stmt = $this->pdo->prepare("SELECT oi.product_id, oi.quantity, oi.total AS price, p.product_name FROM OrderItem oi 
                                          LEFT JOIN Product p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
             $stmt->execute([$order['order_id']]);
             $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -54,7 +55,8 @@ class OrdersAPI {
         
         if (!$order) return $this->handler->sendResponse(false, null, 'Order not found');
         
-        $stmt = $this->pdo->prepare("SELECT oi.*, p.product_name FROM OrderItem oi LEFT JOIN Product p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
+        // FIX: Added oi.product_id to the field list
+        $stmt = $this->pdo->prepare("SELECT oi.product_id, oi.quantity, oi.total AS price, p.product_name FROM OrderItem oi LEFT JOIN Product p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
         $stmt->execute([$id]);
         $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
@@ -63,7 +65,6 @@ class OrdersAPI {
 
     public function create() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        
         $cust_id = $data['customer_id'] ?? null;
         $cust_name = $data['customer_name'] ?? null;
         $total = $data['total_amount'] ?? 0;
@@ -83,7 +84,6 @@ class OrdersAPI {
             $order_id = $this->pdo->lastInsertId();
             
             if ($type === 'Custom') {
-                // FIX: Removed 'status' field insertion since it no longer exists on CakeOrder table[cite: 11]
                 $stmt = $this->pdo->prepare("INSERT INTO CakeOrder (order_id, customer_id, custome_name, phone_no, design_details, description, requested_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$order_id, $cust_id, $cust_name, $data['phone'] ?? null, $data['design_details'] ?? null, $data['description'] ?? null, $data['pickup_date'] ?? null]);
             } elseif ($type === 'Online') {
@@ -117,7 +117,6 @@ class OrdersAPI {
 
     public function updateCakeStatus() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        // FIX: Routes custom cake state adjustments directly to parent Order validation framework[cite: 11]
         $stmt = $this->pdo->prepare("UPDATE `Order` SET status = ? WHERE order_id = ?");
         $stmt->execute([$data['status'], $data['order_id']]);
         $this->handler->sendResponse(true, null, 'Cake status updated');
@@ -127,7 +126,6 @@ class OrdersAPI {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         try {
             $this->pdo->beginTransaction();
-            // FIX: Split query to isolate CakeOrder modification parameters from main Order status constraints[cite: 11]
             $stmt = $this->pdo->prepare("UPDATE CakeOrder SET design_details = ?, description = ?, requested_date = ? WHERE order_id = ?");
             $stmt->execute([$data['design_details'], $data['description'], $data['pickup_date'], $data['order_id']]);
             
