@@ -7,7 +7,9 @@ let activeExpenseFilterTab = 'daily';
  * Main dashboard template generation orchestration block
  */
 async function renderExpenseRecords() {
-  return `
+    await loadAppData(); // waiting till the data is fetched
+
+    return `
     <!-- Top Area: Data Logging Capture View -->
     <div class="card">
         <h3><i class="fas fa-receipt" style="color: var(--primary); margin-right: 0.5rem;"></i> Log New Expenditure Record</h3>
