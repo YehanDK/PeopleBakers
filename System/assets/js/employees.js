@@ -7,6 +7,9 @@ async function loadEmployees() {
             ...employee,
             id: String(employee.employee_id ?? employee.id ?? ''),
             employee_id: String(employee.employee_id ?? employee.id ?? ''),
+            salary: employee.salary || 0,
+            basic_salary: Number(employee.basic_salary || 0),
+            payment_date: employee.payment_date || 'N/A',
         }));
     }
     return employees;
@@ -19,8 +22,7 @@ async function renderManageEmployee() {
             <td><span class="employee-id">${emp.employee_id || emp.id}</span></td>
             <td>${emp.name}</td>
             <td>${emp.role}</td>
-            <td>$${(45000 + index * 5000).toLocaleString()}</td>
-            <td><span class="badge badge-green">Active</span></td>
+            <td>${emp.phone || 'N/A'}</td>
             <td>
                 <button class="btn btn-sm btn-yellow" onclick="editEmployee(${index})"><i class="fas fa-pen"></i></button>
                 <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${index})"><i class="fas fa-trash"></i></button>
@@ -34,11 +36,10 @@ async function renderManageEmployee() {
                 <h3><i class="fas fa-user-gear" style="color:var(--primary);margin-right:0.5rem;"></i> Manage Employees</h3>
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
                     <input class="search-box" placeholder="Search employees..." id="manageEmpSearch" oninput="filterManageEmployees()" />
-                    <button class="btn btn-success" onclick="renderTab('add-employee')"><i class="fas fa-plus"></i> Add Employee</button>
                 </div>
             </div>
             <table>
-                <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Salary</th><th>Status</th><th>Actions</th></tr>
+                <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Phone</th><th>Actions</th></tr>
                 <tbody id="manageEmpBody">${rows}</tbody>
             </table>
         </div>
@@ -188,14 +189,13 @@ function filterManageEmployees() {
             <td><span class="employee-id">${emp.employee_id || emp.id}</span></td>
             <td>${emp.name}</td>
             <td>${emp.role}</td>
-            <td>$${(45000 + origIndex * 5000).toLocaleString()}</td>
-            <td><span class="badge badge-green">Active</span></td>
+            <td>${emp.phone || 'N/A'}</td>
             <td>
                 <button class="btn btn-sm btn-yellow" onclick="editEmployee(${origIndex})"><i class="fas fa-pen"></i></button>
                 <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${origIndex})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>`;
-    }).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No employees found matching your search.</td></tr>';
+    }).join('') || '<tr><td colspan="5" class="text-muted text-center py-2">No employees found matching your search.</td></tr>';
 }
 
 async function renderViewEmployees() {
@@ -206,7 +206,6 @@ async function renderViewEmployees() {
             <td>${emp.name}</td>
             <td>${emp.role}</td>
             <td>${emp.email}</td>
-            <td><span class="badge badge-green">Active</span></td>
         </tr>`
     ).join('');
 
@@ -217,7 +216,7 @@ async function renderViewEmployees() {
                 <input class="search-box" placeholder="Search employees..." id="viewEmpSearch" oninput="filterViewEmployees()" />
             </div>
             <table>
-                <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Email</th><th>Status</th></tr>
+                <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Email</th></tr>
                 <tbody id="viewEmpBody">${rows}</tbody>
             </table>
         </div>
@@ -238,9 +237,8 @@ function filterViewEmployees() {
             <td>${emp.name}</td>
             <td>${emp.role}</td>
             <td>${emp.email}</td>
-            <td><span class="badge badge-green">Active</span></td>
         </tr>`
-    ).join('') || '<tr><td colspan="5" class="text-muted text-center py-2">No employees found matching your search.</td></tr>';
+    ).join('') || '<tr><td colspan="4" class="text-muted text-center py-2">No employees found matching your search.</td></tr>';
 }
 
 async function renderLeaveManagement() {

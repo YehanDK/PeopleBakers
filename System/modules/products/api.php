@@ -18,6 +18,9 @@ switch ($action) {
     case 'delete':
         deleteProduct();
         break;
+    case 'categories':
+        listCategories();
+        break;
     default:
         sendResponse(false, null, 'Invalid action');
 }
@@ -86,5 +89,22 @@ function sendResponse($success, $data = null, $message = '') {
         'message' => $message
     ]);
     exit;
+}
+function listCategories() {
+
+    global $pdo;
+
+    $stmt = $pdo->query("
+        SELECT
+            category_id,
+            category_name
+        FROM product_categories
+        ORDER BY category_name
+    ");
+
+    echo json_encode(
+        $stmt->fetchAll(PDO::FETCH_ASSOC)
+    );
+
 }
 ?>

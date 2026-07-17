@@ -25,50 +25,74 @@ function renderEmployeeManagerDashboard() {
       <div class="stat-card"><div class="num">${pendingLeaves}</div><div class="label">Pending Leaves</div></div>
       <div class="stat-card"><div class="num">${leaveRequests.filter(l => l.status === 'Approved').length}</div><div class="label">Approved Leaves</div></div>
     </div>
-    <div class="card">
-      <div class="card-header"><h3>Recent Leave Activity</h3><span class="text-muted">Today</span></div>
-      <table><tr><th>Employee</th><th>Type</th><th>Status</th></tr>
-        ${leaveRequests.slice(0, 3).map(l => `
-          <tr><td>${l.employee}</td><td>${l.type}</td><td><span class="badge ${l.status === 'Pending' ? 'badge-orange' : l.status === 'Approved' ? 'badge-green' : 'badge-red'}">${l.status}</span></td></tr>
-        `).join('')}
-      </table>
-    </div>
   `;
 }
 
 // ----- Company Manager Dashboard -----
 function renderCompanyManagerDashboard() {
+  // Revenue & order count from live sales data (loaded in loadAppData)
+  const orders = [...onlineOrders, ...inStoreOrders];
+  const revenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+  const orderCount = orders.length;
+
+  const money = (n) => 'LKR ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   return `
     <div class="grid-3">
       <div class="stat-card"><div class="num">${employees.length}</div><div class="label">Total Employees</div></div>
-      <div class="stat-card"><div class="num">$124,500</div><div class="label">Monthly Revenue</div></div>
-      <div class="stat-card"><div class="num">1,245</div><div class="label">Orders</div></div>
+      <div class="stat-card"><div class="num">${money(revenue)}</div><div class="label">Total Revenue</div></div>
+      <div class="stat-card"><div class="num">${orderCount}</div><div class="label">Total Orders</div></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3>Company Overview</h3><span class="text-muted">Today</span></div>
+      <div class="card-header"><h3>Company Overview</h3><span class="text-muted">Live</span></div>
       <table><tr><th>Metric</th><th>Value</th></tr>
         <tr><td>Total Employees</td><td>${employees.length}</td></tr>
-        <tr><td>Total Revenue (YTD)</td><td>$356,780</td></tr>
-        <tr><td>Active Orders</td><td>28</td></tr>
+        <tr><td>Total Revenue</td><td>${money(revenue)}</td></tr>
+        <tr><td>Total Orders</td><td>${orderCount}</td></tr>
       </table>
     </div>
   `;
 }
 
 // ----- Finance Manager Dashboard -----
-function renderFinanceManagerDashboard() {
+async function renderFinanceManagerDashboard() {
+  // Revenue = total of all online + in-store order sales (loaded in loadAppData)
+  const orders = [...onlineOrders, ...inStoreOrders];
+  const revenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+  // Salaries = sum of all recorded salary payouts (fetched live)
+  let salaries = 0;
+  try {
+    const salaryResponse = await SalaryAPI.list();
+    if (salaryResponse.success) {
+      salaries = (salaryResponse.data || []).reduce((s, sal) => s + Number(sal.amount || 0), 0);
+    }
+  } catch (e) {
+    console.error('Failed to load salaries:', e);
+  }
+
+  // Restock cost = sum of all restock records (unit cost × quantity), loaded in loadAppData
+  const restockTotal = restockRecords.reduce((s, r) => s + (Number(r.unitCost || 0) * Number(r.qty || 0)), 0);
+
+  // Net profit deducts both salaries and restock costs from revenue
+  const netProfit = revenue - salaries - restockTotal;
+  const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+  const money = (n) => 'LKR ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   return `
     <div class="grid-3">
-      <div class="stat-card"><div class="num">$124.5k</div><div class="label">Monthly Revenue</div></div>
-      <div class="stat-card"><div class="num">$45.2k</div><div class="label">Total Salaries</div></div>
-      <div class="stat-card"><div class="num">87%</div><div class="label">Profit Margin</div></div>
+      <div class="stat-card"><div class="num">${money(revenue)}</div><div class="label">Total Revenue</div></div>
+      <div class="stat-card"><div class="num">${money(salaries + restockTotal)}</div><div class="label">Total Expenses</div></div>
+      <div class="stat-card"><div class="num">${profitMargin.toFixed(1)}%</div><div class="label">Profit Margin</div></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3>Financial Summary</h3><span class="text-muted">Q2 2026</span></div>
+      <div class="card-header"><h3>Financial Summary</h3><span class="text-muted">Live</span></div>
       <table><tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Revenue</td><td>$356,780</td></tr>
-        <tr><td>Expenses</td><td>$124,500</td></tr>
-        <tr><td>Net Profit</td><td>$232,280</td></tr>
+        <tr><td>Revenue</td><td>${money(revenue)}</td></tr>
+        <tr><td>Salaries</td><td>${money(salaries)}</td></tr>
+        <tr><td>Restock Cost</td><td>${money(restockTotal)}</td></tr>
+        <tr><td>Net Profit</td><td>${money(netProfit)}</td></tr>
       </table>
     </div>
   `;
@@ -76,20 +100,32 @@ function renderFinanceManagerDashboard() {
 
 // ----- Inventory Manager Dashboard -----
 function renderInventoryManagerDashboard() {
-  const totalItems = inventoryItems.reduce((s, i) => s + Number(i.stock_qty ?? i.stock ?? 0), 0);
+  const productCount = inventoryItems.length;
   const lowCount = inventoryItems.filter(i => Number(i.stock_qty ?? i.stock ?? 0) < 15).length;
   const criticalCount = inventoryItems.filter(i => Number(i.stock_qty ?? i.stock ?? 0) < 5).length;
+
+  // Most recent restock records (by id) for the live activity feed
+  const recent = [...restockRecords]
+    .sort((a, b) => Number(b.id || 0) - Number(a.id || 0))
+    .slice(0, 3);
+
+  const activity = recent.length
+    ? recent.map(r => `
+        <tr><td>Restock #${r.id || 'N/A'} recorded (${r.item || 'Item'})</td><td>${r.date || 'N/A'}</td></tr>
+      `).join('')
+    : `<tr><td colspan="2" class="text-muted text-center py-2">No restock activity recorded.</td></tr>`;
+
   return `
     <div class="grid-3">
-      <div class="stat-card"><div class="num">${totalItems}</div><div class="label">Total Items</div></div>
+      <div class="stat-card"><div class="num">${productCount}</div><div class="label">Total Products</div></div>
       <div class="stat-card"><div class="num">${lowCount}</div><div class="label">Low Stock</div></div>
       <div class="stat-card"><div class="num">${restockRecords.length}</div><div class="label">Restock Orders</div></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3>Recent Activity</h3><span class="text-muted">Today</span></div>
-      <table><tr><th>Event</th><th>Time</th></tr>
-        <tr><td>Restock #${restockRecords[restockRecords.length-1]?.id || 'N/A'} recorded</td><td>10:30 AM</td></tr>
-        <tr><td>${criticalCount > 0 ? `⚠️ ${criticalCount} critical stock alerts` : '✅ All stock levels are healthy'}</td><td>09:15 AM</td></tr>
+      <div class="card-header"><h3>Recent Activity</h3><span class="text-muted">Live</span></div>
+      <table><tr><th>Event</th><th>Date</th></tr>
+        ${activity}
+        <tr><td>${criticalCount > 0 ? `⚠️ ${criticalCount} critical stock alert(s)` : lowCount > 0 ? `⚠️ ${lowCount} low stock item(s)` : '✅ All stock levels are healthy'}</td><td>Now</td></tr>
       </table>
     </div>
   `;

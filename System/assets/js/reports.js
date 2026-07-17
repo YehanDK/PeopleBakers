@@ -49,9 +49,9 @@ function renderViewSalesReports() {
       <div id="companyReportResult" class="mt-2">
         <table>
           <tr><th>Metric</th><th>Value</th></tr>
-          <tr><td>Total Sales</td><td>$${summary.totalSales.toFixed(2)}</td></tr>
+          <tr><td>Total Sales</td><td>LKR ${summary.totalSales.toFixed(2)}</td></tr>
           <tr><td>Orders</td><td>${summary.orderCount}</td></tr>
-          <tr><td>Average Order Value</td><td>$${summary.averageOrderValue.toFixed(2)}</td></tr>
+          <tr><td>Average Order Value</td><td>LKR ${summary.averageOrderValue.toFixed(2)}</td></tr>
           <tr><td>Top Item</td><td>${summary.topItem}</td></tr>
         </table>
       </div>
@@ -82,9 +82,9 @@ function renderGenerateSalesReports() {
       <div id="companyReportResult" class="mt-2">
         <table>
           <tr><th>Metric</th><th>Value</th></tr>
-          <tr><td>Total Sales</td><td>$${summary.totalSales.toFixed(2)}</td></tr>
+          <tr><td>Total Sales</td><td>LKR ${summary.totalSales.toFixed(2)}</td></tr>
           <tr><td>Orders</td><td>${summary.orderCount}</td></tr>
-          <tr><td>Average Order Value</td><td>$${summary.averageOrderValue.toFixed(2)}</td></tr>
+          <tr><td>Average Order Value</td><td>LKR ${summary.averageOrderValue.toFixed(2)}</td></tr>
           <tr><td>Top Item</td><td>${summary.topItem}</td></tr>
         </table>
       </div>
@@ -116,9 +116,9 @@ function generateCompanyReport() {
     resultDiv.innerHTML = `
       <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Total Sales</td><td>$${summary.totalSales.toFixed(2)}</td></tr>
+        <tr><td>Total Sales</td><td>LKR ${summary.totalSales.toFixed(2)}</td></tr>
         <tr><td>Orders</td><td>${summary.orderCount}</td></tr>
-        <tr><td>Average Order Value</td><td>$${summary.averageOrderValue.toFixed(2)}</td></tr>
+        <tr><td>Average Order Value</td><td>LKR ${summary.averageOrderValue.toFixed(2)}</td></tr>
         <tr><td>Top Item</td><td>${summary.topItem}</td></tr>
         <tr><td>Date</td><td>${date}</td></tr>
       </table>
@@ -127,9 +127,9 @@ function generateCompanyReport() {
     resultDiv.innerHTML = `
       <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Total Sales</td><td>$${summary.totalSales.toFixed(2)}</td></tr>
+        <tr><td>Total Sales</td><td>LKR ${summary.totalSales.toFixed(2)}</td></tr>
         <tr><td>Orders</td><td>${summary.orderCount}</td></tr>
-        <tr><td>Average Order Value</td><td>$${summary.averageOrderValue.toFixed(2)}</td></tr>
+        <tr><td>Average Order Value</td><td>LKR ${summary.averageOrderValue.toFixed(2)}</td></tr>
         <tr><td>Top Item</td><td>${summary.topItem}</td></tr>
         <tr><td>Month</td><td>${date}</td></tr>
       </table>
@@ -148,26 +148,26 @@ async function renderCalculateSalary() {
   let historyRows = salaryHistory.map(s => `
     <tr>
       <td>${s.employee_name || s.employee_id}</td>
-      <td>$${Number(s.amount).toFixed(2)}</td>
+      <td>LKR ${Number(s.amount).toFixed(2)}</td>
       <td>${s.payment_date}</td>
-      <td><span class="badge ${s.status === 'Paid' ? 'badge-green' : 'badge-orange'}">${s.status}</span></td>
     </tr>
   `).join('');
 
   return `
     <div class="card"><h3>Calculate Employee Salary</h3>
       <div class="form-group"><label>Employee</label>
-        <select id="salaryEmpSelect">
+        <select id="salaryEmpSelect" onchange="onSalaryEmployeeChange()">
+          <option value="">Select an employee</option>
           ${employees.map(e => `<option value="${e.id}">${e.id} - ${e.name}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>Base Salary ($/year)</label><input id="baseSalary" placeholder="45000.00" value="45000.00" /></div>
-      <div class="form-group"><label>Bonuses ($)</label><input id="bonusAmount" placeholder="2000.00" value="2000.00" /></div>
-      <div class="form-group"><label>Deductions ($)</label><input id="deductionAmount" placeholder="3500.00" value="3500.00" /></div>
+      <div class="form-group"><label>Basic Salary (LKR)</label><input id="baseSalary" placeholder="0.00" value="0.00" readonly /></div>
+      <div class="form-group"><label>Additions / Bonus (LKR)</label><input id="bonusAmount" placeholder="0.00" value="0.00" /></div>
+      <div class="form-group"><label>Deductions (LKR)</label><input id="deductionAmount" placeholder="0.00" value="0.00" /></div>
       <button class="btn" onclick="calculateSalary()">Calculate Salary</button>
       <div id="salaryResult" class="mt-2 order-summary" style="display:none;">
-        <strong>Net Annual Salary: <span id="netSalary"></span></strong>
-        <div class="text-muted">Breakdown: Base <span id="baseDisplay"></span> + Bonus <span id="bonusDisplay"></span> - Deductions <span id="deductionDisplay"></span></div>
+        <strong>Net Salary: <span id="netSalary"></span></strong>
+        <div class="text-muted">Breakdown: Basic <span id="baseDisplay"></span> + Additions <span id="bonusDisplay"></span> - Deductions <span id="deductionDisplay"></span></div>
         <div class="text-muted">Monthly Net: <span id="monthlyNet"></span></div>
         <button class="btn btn-success mt-2" onclick="saveSalary()"><i class="fas fa-save"></i> Save Salary Record</button>
       </div>
@@ -175,11 +175,25 @@ async function renderCalculateSalary() {
     <div class="card mt-2">
       <div class="card-header"><h3>Saved Salary Records</h3></div>
       <table>
-        <tr><th>Employee</th><th>Net Amount</th><th>Payment Date</th><th>Status</th></tr>
-        <tbody id="salaryHistoryBody">${historyRows || '<tr><td colspan="4" class="text-muted text-center py-2">No salary records saved yet.</td></tr>'}</tbody>
+        <tr><th>Employee</th><th>Net Amount</th><th>Payment Date</th></tr>
+        <tbody id="salaryHistoryBody">${historyRows || '<tr><td colspan="3" class="text-muted text-center py-2">No salary records saved yet.</td></tr>'}</tbody>
       </table>
     </div>
   `;
+}
+
+function onSalaryEmployeeChange() {
+  const id = document.getElementById('salaryEmpSelect').value;
+  const emp = employees.find(e => e.id === id);
+  const baseInput = document.getElementById('baseSalary');
+  if (emp) {
+    baseInput.value = (Number(emp.basic_salary) || 0).toFixed(2);
+  } else {
+    baseInput.value = '0.00';
+  }
+  // Hide any previous calculation result until recalculated
+  const result = document.getElementById('salaryResult');
+  if (result) result.style.display = 'none';
 }
 
 let lastCalculatedNet = 0;
@@ -190,11 +204,11 @@ function calculateSalary() {
   const deductions = parseFloat(document.getElementById('deductionAmount').value) || 0;
   const net = base + bonus - deductions;
   lastCalculatedNet = net;
-  document.getElementById('netSalary').textContent = `$${net.toFixed(2)}`;
-  document.getElementById('baseDisplay').textContent = `$${base.toFixed(2)}`;
-  document.getElementById('bonusDisplay').textContent = `$${bonus.toFixed(2)}`;
-  document.getElementById('deductionDisplay').textContent = `$${deductions.toFixed(2)}`;
-  document.getElementById('monthlyNet').textContent = `$${(net / 12).toFixed(2)}`;
+  document.getElementById('netSalary').textContent = `LKR ${net.toFixed(2)}`;
+  document.getElementById('baseDisplay').textContent = `LKR ${base.toFixed(2)}`;
+  document.getElementById('bonusDisplay').textContent = `LKR ${bonus.toFixed(2)}`;
+  document.getElementById('deductionDisplay').textContent = `LKR ${deductions.toFixed(2)}`;
+  document.getElementById('monthlyNet').textContent = `LKR ${(net / 12).toFixed(2)}`;
   document.getElementById('salaryResult').style.display = 'block';
 }
 

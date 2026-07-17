@@ -150,13 +150,22 @@
         <button class="modal-close" id="closeAddItemModal">&times;</button>
       </div>
       <form id="addItemForm">
-        <div class="form-group">
-          <label>Item Name <span style="color:var(--danger);">*</span></label>
-          <input type="text" id="newItemName" placeholder="e.g. Whole Wheat Bread" required />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Item Name <span style="color:var(--danger);">*</span></label>
+            <input type="text" id="newItemName" placeholder="e.g. Whole Wheat Bread" required />
+          </div>
+          <div class="form-group">
+              <label>Category</label>
+              <select id="newItemCategory">
+                  <option value="">None</option>
+                  
+              </select>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Price ($) <span style="color:var(--danger);">*</span></label>
+            <label>Price (LKR) <span style="color:var(--danger);">*</span></label>
             <input type="number" id="newItemPrice" placeholder="0.00" min="0.01" step="0.01" required />
           </div>
           <div class="form-group">

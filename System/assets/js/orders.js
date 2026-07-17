@@ -3,7 +3,7 @@
 // ============================================================
 
 function renderInStoreOrders() {
-  const itemOptions = inventoryItems.map(item => `<option value="${item.name}">${item.name} - $${Number(item.price || 0).toFixed(2)}</option>`).join('');
+  const itemOptions = inventoryItems.map(item => `<option value="${item.name}">${item.name} - LKR ${Number(item.price || 0).toFixed(2)}</option>`).join('');
   const cartEmpty = instoreCart.length === 0;
   const cartSummary = cartEmpty ?
     `<div class="text-muted">No items added yet.</div>` :
@@ -23,8 +23,8 @@ function renderInStoreOrders() {
             <tr>
               <td>${line.name}</td>
               <td>${line.qty}</td>
-              <td>$${line.price.toFixed(2)}</td>
-              <td>$${(line.qty * line.price).toFixed(2)}</td>
+              <td>${line.price.toFixed(2)}</td>
+              <td>LKR ${(line.qty * line.price).toFixed(2)}</td>
               <td><button class="btn btn-sm btn-danger" type="button" onclick="removeInStoreCartItem('${line.name}')">Remove</button></td>
             </tr>
           `).join('')}
@@ -37,7 +37,7 @@ function renderInStoreOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>$${o.total.toFixed(2)}</td>
+      <td>LKR ${o.total.toFixed(2)}</td>
       <td><span class="badge badge-green">${o.status || 'Completed'}</span></td>
       <td>${o.date}</td>
       <td>
@@ -71,7 +71,7 @@ function renderInStoreOrders() {
       <div class="instore-order-summary card" style="margin-top:1rem;padding:1rem;">
         <div class="card-header" style="justify-content:space-between;gap:1rem;">
           <h3 style="margin:0;font-size:1rem;">Order Summary</h3>
-          <span>Total: <strong>$${totalAmount}</strong></span>
+          <span>Total: <strong>LKR ${totalAmount}</strong></span>
         </div>
         <div id="instoreCartSummary" style="padding:1rem 0;">${cartSummary}</div>
         <div style="display:flex;justify-content:flex-end;gap:1rem;align-items:center;">
@@ -163,7 +163,7 @@ function filterInStoreOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>$${o.total.toFixed(2)}</td>
+      <td>LKR ${o.total.toFixed(2)}</td>
       <td><span class="badge badge-green">${o.status || 'Completed'}</span></td>
       <td>${o.date}</td>
       <td>
@@ -199,8 +199,8 @@ function viewInStoreOrderDetails(id) {
   document.getElementById('detailOrderId').value = order.id;
   document.getElementById('detailCustomer').value = order.customer;
   document.getElementById('detailStatus').value = order.status;
-  document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} ($${i.price.toFixed(2)})`).join('\n');
-  document.getElementById('detailTotal').value = `$${order.total.toFixed(2)}`;
+  document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} (LKR ${i.price.toFixed(2)})`).join('\n');
+  document.getElementById('detailTotal').value = `LKR ${order.total.toFixed(2)}`;
   document.getElementById('orderDetailsModal').classList.add('active');
 }
 function renderOnlineOrders() {
@@ -208,7 +208,7 @@ function renderOnlineOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>$${o.total.toFixed(2)}</td>
+      <td>LKR ${o.total.toFixed(2)}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Pending' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateOnlineOrderStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -246,8 +246,6 @@ function renderOnlineOrders() {
           <select id="updateOnlineOrderStatus">
             <option value="Pending">Pending</option>
             <option value="Preparing">Preparing</option>
-            <option value="Out for Delivery">Out for Delivery</option>
-            <option value="Delivered">Delivered</option>
           </select>
         </div>
       </div>
@@ -267,7 +265,7 @@ function filterOnlineOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>$${o.total.toFixed(2)}</td>
+      <td>LKR ${o.total.toFixed(2)}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Pending' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateOnlineOrderStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -294,10 +292,24 @@ async function updateOnlineOrderStatusFromSelect() {
 async function updateOnlineOrderStatus(id) {
   const order = onlineOrders.find(o => String(o.id) === String(id));
   if (!order) return;
-  const statuses = ['Pending', 'Preparing', 'Out for Delivery', 'Delivered'];
-  const currentIndex = statuses.indexOf(order.status);
-  if (currentIndex < 3) {
-    const nextStatus = statuses[currentIndex + 1];
+
+  // Only advance through the statuses listed in the "New Status" combobox on this tab,
+  // so the action button stays consistent with the available options (e.g. Pending, Preparing).
+  const statusSelect = document.getElementById('updateOnlineOrderStatus');
+  const allowedStatuses = statusSelect
+    ? Array.from(statusSelect.options).map(opt => opt.value)
+    : ['Pending', 'Preparing'];
+
+  const currentIndex = allowedStatuses.indexOf(order.status);
+
+  // Order is already in a later stage than this tab can handle (e.g. handed to delivery).
+  if (currentIndex === -1) {
+    showToast(`Order ${id} is already at '${order.status}'. No further update available here.`);
+    return;
+  }
+
+  if (currentIndex < allowedStatuses.length - 1) {
+    const nextStatus = allowedStatuses[currentIndex + 1];
     const response = await OrdersAPI.updateStatus(order.id, nextStatus);
     if (!response.success) {
       alert(response.message || 'Failed to update order status');
@@ -307,7 +319,7 @@ async function updateOnlineOrderStatus(id) {
     showToast(`Order ${id} status updated to ${nextStatus}`);
     renderTab('online-orders');
   } else {
-    showToast(`Order ${id} is already delivered.`);
+    showToast(`Order ${id} is already at '${order.status}'.`);
   }
 }
 
@@ -317,8 +329,8 @@ function viewOnlineOrderDetails(id) {
   document.getElementById('detailOrderId').value = order.id;
   document.getElementById('detailCustomer').value = order.customer;
   document.getElementById('detailStatus').value = order.status;
-  document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} ($${i.price.toFixed(2)})`).join('\n');
-  document.getElementById('detailTotal').value = `$${order.total.toFixed(2)}`;
+  document.getElementById('detailItems').value = order.items.map(i => `${i.qty}x ${i.name} (LKR ${i.price.toFixed(2)})`).join('\n');
+  document.getElementById('detailTotal').value = `LKR ${order.total.toFixed(2)}`;
   document.getElementById('orderDetailsModal').classList.add('active');
 }
 
@@ -330,7 +342,8 @@ function renderDeliveryManagement() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>${o.address}</td>
+      <td>${o.customer_phone || o.phone || 'N/A'}</td>
+      <td>${o.address || 'N/A'}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -356,7 +369,6 @@ function renderDeliveryManagement() {
         <div class="form-group">
           <label>Update Status To</label>
           <select id="deliveryStatusSelect">
-            <option value="Preparing">Preparing</option>
             <option value="Out for Delivery">Out for Delivery</option>
             <option value="Delivered">Delivered</option>
           </select>
@@ -364,7 +376,7 @@ function renderDeliveryManagement() {
       </div>
       <button class="btn" onclick="updateDeliveryFromSelect()"><i class="fas fa-sync"></i> Update Status</button>
       <table class="mt-2">
-        <tr><th>Order ID</th><th>Customer</th><th>Address</th><th>Status</th><th>Action</th></tr>
+        <tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr>
         <tbody id="deliveryBody">${rows}</tbody>
       </table>
     </div>
@@ -383,13 +395,14 @@ function filterDeliveryOrders() {
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
-      <td>${o.address}</td>
+      <td>${o.customer_phone || o.phone || 'N/A'}</td>
+      <td>${o.address || 'N/A'}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
       </td>
     </tr>
-  `).join('') || '<tr><td colspan="5" class="text-muted text-center py-2">No deliveries found matching your search.</td></tr>';
+  `).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No deliveries found matching your search.</td></tr>';
 }
 
 async function updateDeliveryStatus(id) {

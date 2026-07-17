@@ -90,8 +90,36 @@ class InventoryAPI {
             $this->handler->sendResponse(false, null, 'Failed to update product');
         }
     }
-    
     public function delete() {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $_GET['id'] ?? $_POST['id'] ?? ($input['id'] ?? 0);
+        
+        if (!$id) {
+            return $this->handler->sendResponse(false, null, 'Product ID required');
+        }
+        
+        try {
+            // Stock alerts are just notifications - safe to clear automatically before deleting the product
+            $this->pdo->prepare("DELETE FROM stock_alerts WHERE product_id = ?")->execute([$id]);
+
+            $stmt = $this->pdo->prepare("DELETE FROM products WHERE product_id = ?");
+            $result = $stmt->execute([$id]);
+
+            if ($result) {
+                $this->handler->sendResponse(true, null, 'Product deleted successfully');
+            } else {
+                $this->handler->sendResponse(false, null, 'Failed to delete product');
+            }
+        } catch (Exception $e) {
+            if (strpos($e->getMessage(), 'foreign key') !== false || strpos($e->getMessage(), 'FOREIGN KEY') !== false || strpos($e->getMessage(), 'a foreign key constraint fails') !== false) {
+                $this->handler->sendResponse(false, null, 'Cannot delete this item: it has existing order or restock history linked to it. Consider setting its stock to 0 instead of deleting it.');
+            } else {
+                $this->handler->sendResponse(false, null, 'Failed to delete product: ' . $e->getMessage());
+            }
+        }
+    }
+    
+    /*public function delete() {
         $id = $_GET['id'] ?? $_POST['id'] ?? 0;
         
         if (!$id) {
@@ -106,7 +134,7 @@ class InventoryAPI {
         } else {
             $this->handler->sendResponse(false, null, 'Failed to delete product');
         }
-    }
+    }*/
     
     public function alerts() {
         $this->syncStockAlerts();
