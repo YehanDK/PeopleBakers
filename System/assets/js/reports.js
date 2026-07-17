@@ -1,139 +1,165 @@
-// ============================================================
-//  REPORTS & CALCULATIONS
+/////////////////////////////////////////////////////////////////////
+//  REPORTS & CALCULATIONS (UPDATED FOR DYNAMIC SALES DASHBOARD)
 // ============================================================
 
-function getSalesSummaryData() {
-  const orders = [...onlineOrders, ...inStoreOrders];
-  const totalSales = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
-  const orderCount = orders.length;
-  const averageOrderValue = orderCount ? totalSales / orderCount : 0;
-  const itemCounts = {};
+/**
+ * Aggregates, filters, and sorts sales data based on the chosen duration.
+ * @param {string} duration - 'daily' or 'monthly'
+ */
+function getFilteredSalesSummaryData(duration) {
+  // Gracefully fallback to all orders if global state arrays are undefined
+  const inStore = typeof inStoreOrders !== 'undefined' ? inStoreOrders : [];
+  const online = typeof onlineOrders !== 'undefined' ? onlineOrders : [];
+  const cakes = typeof customCakeOrders !== 'undefined' ? customCakeOrders : [];
 
-  orders.forEach(order => {
+  const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const currentMonthStr = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+  // Helper logic to check if an order falls within the selected time window
+  const matchesFilter = (order) => {
+    // Detect typical order date fields (date, created_at, or payment_date)
+    const orderDate = order.date || order.created_at || order.payment_date || todayStr;
+    if (duration === 'monthly') {
+      return orderDate.startsWith(currentMonthStr);
+    }
+    return orderDate.startsWith(todayStr);
+  };
+
+  // Filter individual order queues matching timeframe requirements
+  const filteredInStore = inStore.filter(matchesFilter);
+  const filteredOnline = online.filter(matchesFilter);
+  const filteredCakes = cakes.filter(matchesFilter);
+
+  // Calculate aggregate financial revenue metrics across all order streams
+  const totalRevenue = [...filteredInStore, ...filteredOnline, ...filteredCakes].reduce(
+    (sum, order) => sum + Number(order.total || order.amount || 0), 0
+  );
+
+  // Analyze individual product transactions and rank popularity metrics
+  const productSalesMap = {};
+  [...filteredInStore, ...filteredOnline, ...filteredCakes].forEach(order => {
     (order.items || []).forEach(item => {
-      const name = item.name || 'Unknown Item';
-      itemCounts[name] = (itemCounts[name] || 0) + Number(item.qty || 0);
+      // Use explicit ID or fallback gracefully to product name references
+      const pId = item.product_id || item.id || 'N/A';
+      const pName = item.name || 'Unknown Bakery Item';
+      const qty = Number(item.qty || item.quantity || 0);
+
+      if (!productSalesMap[pId]) {
+        productSalesMap[pId] = { id: pId, name: pName, salesCount: 0 };
+      }
+      productSalesMap[pId].salesCount += qty;
     });
   });
 
-  const topEntry = Object.entries(itemCounts).sort((a, b) => b[1] - a[1])[0];
+  // Sort products from most sold to least sold
+  const sortedAnalytics = Object.values(productSalesMap).sort((a, b) => b.salesCount - a.salesCount);
 
   return {
-    totalSales,
-    orderCount,
-    averageOrderValue,
-    topItem: topEntry ? `${topEntry[0]} (${topEntry[1]} units)` : 'No sales data yet'
+    inStoreCount: filteredInStore.length,
+    onlineCount: filteredOnline.length,
+    cakeCount: filteredCakes.length,
+    totalRevenue,
+    analytics: sortedAnalytics
   };
 }
+//////////////////////////////////////////////////////////////
+// // fake funciton for finance manger to call 
+// function renderGenerateSalesReports() {
+//   return renderReportUIContainer('daily');
+// }
 
-function renderViewSalesReports() {
-  const summary = getSalesSummaryData();
-  const today = new Date().toISOString().split('T')[0];
-  return `
-    <div class="card">
-      <div class="card-header">
-        <h3><i class="fas fa-chart-simple" style="color:var(--primary);margin-right:0.5rem;"></i> View Reports</h3>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Report Type</label>
-          <select id="companyReportType" onchange="toggleCompanyReportType()">
-            <option value="daily">Daily Report</option>
-            <option value="monthly">Monthly Report</option>
-          </select>
-        </div>
-        <div class="form-group"><label>Date</label>
-          <input type="date" id="companyReportDate" value="${today}" />
-        </div>
-      </div>
-      <button class="btn btn-sm" onclick="generateCompanyReport()">View Reports</button>
-      <div id="companyReportResult" class="mt-2">
-        <table>
-          <tr><th>Metric</th><th>Value</th></tr>
-          <tr><td>Total Sales</td><td>LKR ${summary.totalSales.toFixed(2)}</td></tr>
-          <tr><td>Orders</td><td>${summary.orderCount}</td></tr>
-          <tr><td>Average Order Value</td><td>LKR ${summary.averageOrderValue.toFixed(2)}</td></tr>
-          <tr><td>Top Item</td><td>${summary.topItem}</td></tr>
-        </table>
-      </div>
-    </div>
-  `;
-}
+// // for copmany manager
+// function renderViewSalesReports() {
+//   return renderReportUIContainer('daily');
+// }
 
-function renderGenerateSalesReports() {
-  const summary = getSalesSummaryData();
-  const today = new Date().toISOString().split('T')[0];
-  return `
-    <div class="card">
-      <div class="card-header">
-        <h3><i class="fas fa-chart-simple" style="color:var(--primary);margin-right:0.5rem;"></i> Generate Reports</h3>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Report Type</label>
-          <select id="companyReportType" onchange="toggleCompanyReportType()">
-            <option value="daily">Daily Report</option>
-            <option value="monthly">Monthly Report</option>
-          </select>
-        </div>
-        <div class="form-group"><label>Date</label>
-          <input type="date" id="companyReportDate" value="${today}" />
-        </div>
-      </div>
-      <button class="btn btn-sm" onclick="generateCompanyReport()">Generate Report</button>
-      <div id="companyReportResult" class="mt-2">
-        <table>
-          <tr><th>Metric</th><th>Value</th></tr>
-          <tr><td>Total Sales</td><td>LKR ${summary.totalSales.toFixed(2)}</td></tr>
-          <tr><td>Orders</td><td>${summary.orderCount}</td></tr>
-          <tr><td>Average Order Value</td><td>LKR ${summary.averageOrderValue.toFixed(2)}</td></tr>
-          <tr><td>Top Item</td><td>${summary.topItem}</td></tr>
-        </table>
-      </div>
-    </div>
-  `;
-}
+/**
+ * Builds the template string framework dynamically matching UI configurations.
+ * @param {string} selectedDuration - 'daily' or 'monthly'
+ */
+function renderReportUIContainer(selectedDuration) {
+  const data = getFilteredSalesSummaryData(selectedDuration);
 
-function toggleCompanyReportType() {
-  const type = document.getElementById('companyReportType').value;
-  const dateInput = document.getElementById('companyReportDate');
-  if (type === 'monthly') {
-    const month = new Date().toISOString().slice(0, 7);
-    dateInput.type = 'month';
-    dateInput.value = month;
+  // Generate individual data rows for the Sales Analytics ranking view
+  let tableRowsHtml = '';
+  if (data.analytics.length > 0) {
+    tableRowsHtml = data.analytics.map(item => `
+      <tr>
+        <td>${item.id}</td>
+        <td>${item.name}</td>
+        <td>${item.salesCount}</td>
+      </tr>
+    `).join('');
   } else {
-    dateInput.type = 'date';
-    dateInput.value = new Date().toISOString().split('T')[0];
+    tableRowsHtml = `<tr><td colspan="3" style="color: var(--text-gray); padding: 1rem;">No transactions recorded for this duration window.</td></tr>`;
   }
-  generateCompanyReport();
+
+  return `
+    <div class="report-container" style="background: #ffffff; border-radius: 24px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+        <div class="report-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+            <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
+                <!-- HTML Select Element to control tracking configurations -->
+                <select id="sales-duration-filter" class="duration-select" onchange="handleReportDurationChange(this.value)" style="padding: 8px 16px; font-size: 18px; font-weight: 600; border: none; background-color: #f0f0f2; border-radius: 4px; cursor: pointer;">
+                    <option value="daily" ${selectedDuration === 'daily' ? 'selected' : ''}>Daily</option>
+                    <option value="monthly" ${selectedDuration === 'monthly' ? 'selected' : ''}>Monthly</option>
+                </select>
+                <h2 class="sales-title" style="font-size: 28px; font-weight: bold; color: #000000; margin: 0;">Sales Data</h2>
+            </div>
+            <!-- Generate Report button capability deferred per request instructions -->
+            <button id="btn-generate-report" class="btn-primary-purple" style="background-color: #7B4FB6; color: #ffffff; border: none; padding: 12px 28px; border-radius: 24px; font-size: 18px; font-weight: 500; cursor: pointer;">Generate Report</button>
+        </div>
+
+        <!-- Metric Counter Grid Segment Layout -->
+        <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 48px; padding: 0 20px;">
+            <div class="stat-card" style="flex: 1; text-align: center;">
+                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">In Store Orders</h3>
+                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;">&lt; ${data.inStoreCount} orders &gt;</p>
+            </div>
+            <div class="stat-card" style="flex: 1; text-align: center;">
+                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">Custom Cake Order</h3>
+                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;">&lt; ${data.cakeCount} orders &gt;</p>
+            </div>
+            <div class="stat-card" style="flex: 1; text-align: center;">
+                <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">Online Orders</h3>
+                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;">&lt; ${data.onlineCount} orders &gt;</p>
+            </div>
+        </div>
+
+        <!-- Total Revenue Accumulation Section Display -->
+        <div class="revenue-row" style="margin-bottom: 48px; padding-left: 20px; font-size: 22px; display: flex; gap: 40px;">
+            <span class="lbl-revenue" style="font-weight: bold; color: #000000;">Total Revenue :</span>
+            <span class="val-revenue" style="font-weight: bold; color: #000000;">LKR &lt; ${data.totalRevenue.toFixed(2)} made by all sales &gt;</span>
+        </div>
+
+        <!-- Sales Analytics Ranking Display Table Container Area -->
+        <div class="analytics-section" style="margin-top: 24px;">
+            <h3 style="font-size: 22px; font-weight: bold; margin-bottom: 16px; color: #000000;">Sales analytics</h3>
+            <table class="analytics-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #ffffff;">
+                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">Product ID</th>
+                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">Product name</th>
+                        <th style="border: 2px solid #000000; padding: 14px; text-align: center; font-size: 16px; font-weight: 600;">No of sales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHtml}
+                </tbody>
+            </table>
+        </div>
+    </div>
+  `;
 }
 
-function generateCompanyReport() {
-  const type = document.getElementById('companyReportType').value;
-  const date = document.getElementById('companyReportDate').value;
-  const resultDiv = document.getElementById('companyReportResult');
-  const summary = getSalesSummaryData();
-
-  if (type === 'daily') {
-    resultDiv.innerHTML = `
-      <table>
-        <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Total Sales</td><td>LKR ${summary.totalSales.toFixed(2)}</td></tr>
-        <tr><td>Orders</td><td>${summary.orderCount}</td></tr>
-        <tr><td>Average Order Value</td><td>LKR ${summary.averageOrderValue.toFixed(2)}</td></tr>
-        <tr><td>Top Item</td><td>${summary.topItem}</td></tr>
-        <tr><td>Date</td><td>${date}</td></tr>
-      </table>
-    `;
-  } else {
-    resultDiv.innerHTML = `
-      <table>
-        <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Total Sales</td><td>LKR ${summary.totalSales.toFixed(2)}</td></tr>
-        <tr><td>Orders</td><td>${summary.orderCount}</td></tr>
-        <tr><td>Average Order Value</td><td>LKR ${summary.averageOrderValue.toFixed(2)}</td></tr>
-        <tr><td>Top Item</td><td>${summary.topItem}</td></tr>
-        <tr><td>Month</td><td>${date}</td></tr>
-      </table>
-    `;
+/**
+ * Handles structural updates when shifting filter durations.
+ * Re-injects component layouts directly into the active dashboard workspace view panel.
+ * @param {string} filterValue - The select item configuration payload target ('daily'/'monthly')
+ */
+function handleReportDurationChange(filterValue) {
+  const pageContentContainer = document.getElementById('pageContent');
+  if (pageContentContainer) {
+    pageContentContainer.innerHTML = renderReportUIContainer(filterValue);
   }
 }
 
@@ -141,6 +167,8 @@ function renderSalesReports() {
   return renderGenerateSalesReports();
 }
 
+///////////////////////////////////////////////////////////////////////
+//  SALARY PROCESSING FUNCTIONALITIES (UNMODIFIED)
 async function renderCalculateSalary() {
   const salaryResponse = await SalaryAPI.list();
   const salaryHistory = salaryResponse.success ? salaryResponse.data : [];
