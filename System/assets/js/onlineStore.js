@@ -308,6 +308,10 @@ function renderCustomerCakeRequest() {
         <label>Description</label>
         <textarea id="manualDescription" placeholder="Describe the cake design requirements, custom layers, thematic colors, icing details, etc." rows="4"></textarea>
       </div>
+      <div class="form-group">
+        <label>Pickup Date</label>
+        <input type="date" id="manualPickupDate" />
+      </div>
       <button class="btn" onclick="submitCustomerCakeRequest()">Submit Request</button>
     </div>
   `;
@@ -318,21 +322,26 @@ async function submitCustomerCakeRequest() {
   const design = document.getElementById('manualDesign').value.trim();
   const description = document.getElementById('manualDescription').value.trim();
   const phone = document.getElementById('manualPhone').value.trim();
+  const pickupDate = document.getElementById('manualPickupDate').value;
 
   if (!design) {
     alert('Please enter your requested cake design layout summary.');
     return;
   }
 
+  // Use the customer-chosen pickup date, or auto-schedule 7 days out if left blank
+  const finalPickupDate = pickupDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   const response = await OrdersAPI.create({
     customer_name: currentUser.name,
     customer_id: currentUser.customer_id,
+    phone: phone,
     order_type: 'Custom',
     total_amount: 0,
     items: [],
     design_details: design,
     description: description || 'No specific descriptions applied.',
-    pickup_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Auto-schedule pickup date safely for 7 days out
+    pickup_date: finalPickupDate
   });
 
   if (!response.success) {

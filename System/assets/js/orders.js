@@ -408,10 +408,32 @@ function filterDeliveryOrders() {
 async function updateDeliveryStatus(id) {
   const order = onlineOrders.find(o => String(o.id) === String(id));
   if (!order) return;
-  const statuses = ['Preparing', 'Out for Delivery', 'Delivered'];
-  const currentIndex = statuses.indexOf(order.status);
-  if (currentIndex < 2) {
-    const nextStatus = statuses[currentIndex + 1];
+
+  // Only advance through the statuses listed in the "Update Status To" combobox on this tab,
+  // so the action button stays consistent with the available options (e.g. Out for Delivery, Delivered).
+  const statusSelect = document.getElementById('deliveryStatusSelect');
+  const allowedStatuses = statusSelect
+    ? Array.from(statusSelect.options).map(opt => opt.value)
+    : ['Out for Delivery', 'Delivered'];
+
+  const currentIndex = allowedStatuses.indexOf(order.status);
+
+  // Order is before this tab's stages (e.g. Pending/Preparing) -> jump to the first allowed status.
+  if (currentIndex === -1) {
+    const firstStatus = allowedStatuses[0];
+    const response = await OrdersAPI.updateStatus(order.id, firstStatus);
+    if (!response.success) {
+      alert(response.message || 'Failed to update delivery status');
+      return;
+    }
+    await loadAppData();
+    showToast(`Order ${id} status updated to ${firstStatus}`);
+    renderTab('delivery-mgmt');
+    return;
+  }
+
+  if (currentIndex < allowedStatuses.length - 1) {
+    const nextStatus = allowedStatuses[currentIndex + 1];
     const response = await OrdersAPI.updateStatus(order.id, nextStatus);
     if (!response.success) {
       alert(response.message || 'Failed to update delivery status');
@@ -421,7 +443,7 @@ async function updateDeliveryStatus(id) {
     showToast(`Order ${id} status updated to ${nextStatus}`);
     renderTab('delivery-mgmt');
   } else {
-    showToast(`Order ${id} is already delivered.`);
+    showToast(`Order ${id} is already at '${order.status}'.`);
   }
 }
 

@@ -89,33 +89,38 @@ public function create() {
         $payment_method = $data['payment_method'] ?? 'Online'; 
         $payment_status = ($payment_method === 'Card') ? 'Completed' : 'Pending';
 
+        // CUSTOM ORDERS: do NOT create an order row yet. The request lives ONLY in
+        // custom_cake_orders with status 'PendingApproval'. It is moved into `orders`
+        // only after a sales supervisor approves it (see custom/api.php -> approve()).
         if ($order_type === 'Custom') {
-            $items = [];
-            $total_amount = 0;
-        } elseif (empty($items) || $total_amount <= 0) {
+            if (empty($design_details) || empty($pickup_date)) {
+                return $this->handler->sendResponse(false, null, 'Custom cake orders require design details and a pickup date.');
+            }
+            $stmt = $this->pdo->prepare("INSERT INTO custom_cake_orders (customer_id, customer_name, phone, design_details, description, pickup_date, status) VALUES (?, ?, ?, ?, ?, ?, 'PendingApproval')");
+            $stmt->execute([$customer_id, $customer_name, $phone, $design_details, $description, $pickup_date]);
+            $custom_order_id = $this->pdo->lastInsertId();
+            $this->handler->sendResponse(true, ['custom_order_id' => $custom_order_id], 'Custom cake request submitted for supervisor approval.');
+        }
+
+        if (empty($items) || $total_amount <= 0) {
             return $this->handler->sendResponse(false, null, 'Order must have items and valid total');
         }
 
         // Initial status depends on order type:
         // - InStore: paid and handed over at the counter, so it's Completed right away.
-        // - Online / Custom: still needs to be prepared/reviewed, so it starts Pending.
-        //   (Custom orders in particular must NEVER start as Completed - they require
-        //   sales staff to review the design before approving.)
+        // - Online: still needs to be prepared/delivered, so it starts Pending.
         $initial_status = ($order_type === 'InStore') ? 'Completed' : 'Pending';
-        
+
         try {
             $this->pdo->beginTransaction();
-            
+
             // 1. Insert order record
             $stmt = $this->pdo->prepare("INSERT INTO orders (customer_id, customer_name, total_amount, order_type, status) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$customer_id, $customer_name, $total_amount, $order_type, $initial_status]);
             $order_id = $this->pdo->lastInsertId();
-            
-            // 2. Handle specific type processing routes
-            if ($order_type === 'Custom') {
-                $stmt = $this->pdo->prepare("INSERT INTO custom_cake_orders (order_id, phone, design_details, description, pickup_date) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$order_id, $phone, $design_details, $description, $pickup_date]);
-            } else {
+
+            // 2. Handle specific type processing routes (Custom is handled above, so only InStore/Online reach here)
+            {
                 foreach ($items as $item) {
                     $stmt = $this->pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price_at_time) VALUES (?, ?, ?, ?)");
                     $stmt->execute([$order_id, $item['product_id'], $item['quantity'], $item['price']]);
@@ -147,7 +152,7 @@ public function create() {
             return $this->handler->sendResponse(false, null, 'Order ID and status are required');
         }
         
-        $allowed = ['Pending', 'Preparing', 'Out for Delivery', 'Delivered', 'Completed', 'Cancelled', 'Rejected'];
+        $allowed = ['Pending', 'Preparing', 'Ready for Pickup', 'Out for Delivery', 'Delivered', 'Completed', 'Cancelled', 'Rejected'];
         if (!in_array($status, $allowed)) {
             return $this->handler->sendResponse(false, null, 'Invalid status');
         }
@@ -189,12 +194,24 @@ public function create() {
     }
 
     // Update custom cake order details (customer_name, design_details, description, pickup_date, status)
+    // Works for BOTH pending requests (keyed by custom_order_id) and approved ones (keyed by order_id).
     public function update() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         $order_id = $data['order_id'] ?? $_GET['id'] ?? 0;
+        $custom_order_id = $data['custom_order_id'] ?? 0;
 
-        if (!$order_id) {
-            return $this->handler->sendResponse(false, null, 'Order ID is required');
+        if (!$order_id && !$custom_order_id) {
+            return $this->handler->sendResponse(false, null, 'Order ID or custom order ID is required');
+        }
+
+        // If only custom_order_id was given, resolve its linked order_id (set once approved)
+        if ($custom_order_id && !$order_id) {
+            $stmt = $this->pdo->prepare("SELECT order_id FROM custom_cake_orders WHERE custom_order_id = ?");
+            $stmt->execute([$custom_order_id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row && $row['order_id']) {
+                $order_id = $row['order_id'];
+            }
         }
 
         // Fields from orders table
@@ -224,6 +241,12 @@ public function create() {
             $cakeFields[] = 'phone = ?';
             $cakeParams[] = $data['phone'];
         }
+        // Price is stored ONLY on the orders table as total_amount (custom_cake_orders has no price column).
+        // Only update it when the cake already has an order (i.e. it's been approved).
+        if (isset($data['price']) && $order_id) {
+            $orderFields[] = 'total_amount = ?';
+            $orderParams[] = floatval($data['price']);
+        }
         if (isset($data['status'])) {
             $allowed = ['PendingApproval', 'Approved', 'Rejected'];
             if (!in_array($data['status'], $allowed)) {
@@ -236,17 +259,23 @@ public function create() {
         try {
             $this->pdo->beginTransaction();
 
-            // Update orders table if customer_name provided
-            if (!empty($orderFields)) {
+            // Update orders table if an order exists and customer_name provided
+            if (!empty($orderFields) && $order_id) {
                 $orderParams[] = $order_id;
                 $stmt = $this->pdo->prepare("UPDATE orders SET " . implode(', ', $orderFields) . " WHERE order_id = ?");
                 $stmt->execute($orderParams);
             }
 
-            // Update custom_cake_orders table if any cake fields provided
+            // Update custom_cake_orders table if any cake fields provided.
+            // Pending requests have no order_id yet, so key by custom_order_id when present.
             if (!empty($cakeFields)) {
-                $cakeParams[] = $order_id;
-                $stmt = $this->pdo->prepare("UPDATE custom_cake_orders SET " . implode(', ', $cakeFields) . " WHERE order_id = ?");
+                if ($custom_order_id) {
+                    $cakeParams[] = $custom_order_id;
+                    $stmt = $this->pdo->prepare("UPDATE custom_cake_orders SET " . implode(', ', $cakeFields) . " WHERE custom_order_id = ?");
+                } else {
+                    $cakeParams[] = $order_id;
+                    $stmt = $this->pdo->prepare("UPDATE custom_cake_orders SET " . implode(', ', $cakeFields) . " WHERE order_id = ?");
+                }
                 $stmt->execute($cakeParams);
             }
 
