@@ -119,3 +119,12 @@ const SalaryAPI = {
     updateStatus: (salary_id, status) => API.call('salary', 'updateStatus', 'POST', { salary_id, status }),
     delete: (id) => API.call('salary', 'delete', 'POST', { id }),
 };
+
+// Custom Cake Order workflow (sales assistant requests -> supervisor approves -> order created)
+const CustomAPI = {
+    create: (data) => API.call('custom', 'create', 'POST', data),
+    list: (status) => API.call('custom', 'list', 'GET', status ? { status } : {}),
+    approve: (custom_order_id, approved_by, price) => API.call('custom', 'approve', 'POST', { custom_order_id, approved_by, price: price || 0 }),
+    reject: (custom_order_id) => API.call('custom', 'reject', 'POST', { custom_order_id }),
+    delete: (custom_order_id) => API.call('custom', 'delete', 'POST', { custom_order_id }),
+};
