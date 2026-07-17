@@ -59,7 +59,6 @@ function renderExpenseListTableHTML() {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
-
   const todayStr = `${year}-${month}-${day}`;
   const currentMonthStr = `${year}-${month}`;
 
@@ -67,7 +66,7 @@ function renderExpenseListTableHTML() {
   const filteredRecords = expenseRecords.filter(r => {
     if (activeExpenseFilterTab === 'daily') return r.date === todayStr;
     if (activeExpenseFilterTab === 'monthly') return r.date.startsWith(currentMonthStr);
-    return true; // All time fallback route
+    return true; 
   });
 
   const aggregateOutflow = filteredRecords.reduce((sum, r) => sum + r.amount, 0);
@@ -81,13 +80,15 @@ function renderExpenseListTableHTML() {
         <td>${r.description}</td>
         <td>${r.date}</td>
         <td><span style="font-weight:600; color: var(--red);">LKR ${r.amount.toFixed(2)}</span></td>
+        <td>
+            <button class="btn btn-sm btn-danger" onclick="deleteExpense(${r.id})"><i class="fas fa-trash"></i></button>
+        </td>
       </tr>
     `).join('');
   } else {
-    rowsHtml = `<tr><td colspan="5" class="text-muted text-center py-2">No expenditure tracks discovered matching parameters.</td></tr>`;
+    rowsHtml = `<tr><td colspan="6" class="text-muted text-center py-2">No expenditure tracks discovered matching parameters.</td></tr>`;
   }
 
-  // Auto-populates standard default values when elements execute injection cycles
   setTimeout(() => {
     const inputDate = document.getElementById('expDate');
     if (inputDate && !inputDate.value) inputDate.value = todayStr;
@@ -110,6 +111,7 @@ function renderExpenseListTableHTML() {
                     <th>Description</th>
                     <th>Transaction Date</th>
                     <th>Total Outflow</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -123,6 +125,35 @@ function renderExpenseListTableHTML() {
         </div>
     </div>
   `;
+}
+
+/**
+ * Sends a removal tracking command to the database engine and cleans the local memory stack
+ * @param {number} id - Target expense record ID
+ */
+async function deleteExpense(id) {
+  if (!confirm(`Are you sure you want to permanently delete expense record #EXP-${id}?`)) return;
+
+  try {
+    const response = await ExpensesAPI.delete(id);
+    if (response.success) {
+      showToast('Expense record removed from registry ledger.');
+      
+      await loadAppData(); 
+      // Clear and completely rebuild the UI view via the application router
+      renderTab('expense-records');
+
+      // Re-trigger rendering context block
+      const container = document.getElementById('expenseDataListContainer');
+      if (container) {
+        container.innerHTML = renderExpenseListTableHTML();
+      }
+    } else {
+      alert(response.message || 'Database engine rejected deletion request.');
+    }
+  } catch (error) {
+    alert('Terminal loop processing error: ' + error.message);
+  }
 }
 
 /**

@@ -137,5 +137,6 @@ const CustomAPI = {
 // expense record api
 const ExpensesAPI = {
     list: () => API.call('expenses', 'list', 'GET'),
-    create: (data) => API.call('expenses', 'create', 'POST', data)
+    create: (data) => API.call('expenses', 'create', 'POST', data),
+    delete: (id) => API.call('expenses', 'delete', 'POST', { id })
 };
