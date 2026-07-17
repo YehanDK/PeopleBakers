@@ -185,7 +185,7 @@
   <div class="modal-overlay" id="editItemModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3><i class="fas fa-pen" style="color:var(--primary);margin-right:0.5rem;"></i> Adjust Item</h3>
+        <h3><i class="fas fa-pen" style="color:var(--primary);margin-right:0.5rem;"></i> Edit Item Details</h3>
         <button class="modal-close" id="closeEditItemModal">&times;</button>
       </div>
       <form id="editItemForm">
@@ -195,7 +195,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>New Price ($)</label>
+            <label>New Price (LKR)</label>
             <input type="number" id="editItemPrice" min="0.01" step="0.01" required />
           </div>
           <div class="form-group">
@@ -271,7 +271,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Unit Cost ($)</label>
+            <label>Unit Cost (LKR)</label>
             <input type="number" id="editRestockUnitCost" min="0.01" step="0.01" />
           </div>
           <div class="form-group">
@@ -340,7 +340,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Unit Cost ($) <span style="color:var(--danger);">*</span></label>
+            <label>Unit Cost (LKR) <span style="color:var(--danger);">*</span></label>
             <input type="number" id="restockUnitCost" placeholder="e.g. 12.50" min="0.01" step="0.01" required>
           </div>
           <div class="form-group">
