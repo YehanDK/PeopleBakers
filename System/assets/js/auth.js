@@ -121,18 +121,43 @@ async function loadAppData() {
 
                 onlineOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'online');
                 inStoreOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'instore');
-                customCakeRequests = orders.filter(order => (order.order_type || '').toLowerCase() === 'custom').map(order => ({
-                    ...order,
-                    customer: order.customer_name || order.customer || 'Guest Customer',
-                    design: order.design_details || order.description || 'Custom cake request',
-                    phone: order.phone || 'N/A',
-                    description: order.description || order.design_details || 'No description provided',
-                    date: order.date || order.order_date || '',
-                    status: order.cake_status || order.status || 'PendingApproval',
-                    fulfillmentStatus: order.status || 'Pending'
-                }));
-                customCakeCounter = Math.max(1, customCakeRequests.length + 1);
+                // NOTE: customCakeRequests is built below from custom_cake_orders (single source,
+                // keyed by custom_order_id) so delete/approve/reject target the correct row.
                 inStoreOrderCounter = Math.max(1, inStoreOrders.length + 1);
+            }
+        }
+
+        // Load custom cake REQUESTS directly from custom_cake_orders.
+        // Pending requests live ONLY here until a supervisor approves them;
+        // approved/rejected ones stay here too (with order_id set once approved).
+        if (typeof CustomAPI !== 'undefined') {
+            try {
+                const cakeResp = await CustomAPI.list();
+                if (cakeResp.success) {
+                    const cakeRows = (cakeResp.data || []).map(c => ({
+                        id: c.custom_order_id,
+                        custom_order_id: c.custom_order_id,
+                        order_id: c.order_id,
+                        customer: c.customer_name || 'Guest Customer',
+                        customer_name: c.customer_name,
+                        customer_id: c.customer_id,
+                        phone: c.phone || 'N/A',
+                        design: c.design_details || c.description || 'Custom cake request',
+                        description: c.description || c.design_details || 'No description provided',
+                        price: (c.total_amount !== null && c.total_amount !== undefined) ? c.total_amount : '',
+                        date: c.pickup_date || c.created_at || '',
+                        pickup_date: c.pickup_date,
+                        status: c.status || 'PendingApproval',
+                        approved_by: c.approved_by,
+                        approved_at: c.approved_at,
+                        fulfillmentStatus: c.status === 'Approved' ? 'Pending' : c.status
+                    }));
+                    // Single source of truth: custom_cake_orders (keyed by custom_order_id)
+                    customCakeRequests = cakeRows;
+                    customCakeCounter = Math.max(1, cakeRows.length + 1);
+                }
+            } catch (e) {
+                console.error('Failed to load custom cake requests:', e);
             }
         }
     } catch (error) {
