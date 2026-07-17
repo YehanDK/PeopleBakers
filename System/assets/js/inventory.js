@@ -425,7 +425,6 @@ function renderRestockManagement() {
       <td>${r.date}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewRestock('${r.id}')"><i class="fas fa-eye"></i></button>
-        <button class="btn btn-sm btn-yellow" onclick="editRestock('${r.id}')"><i class="fas fa-edit"></i></button>
         <button class="btn btn-sm btn-danger" onclick="deleteRestock('${r.id}')"><i class="fas fa-trash"></i></button>
       </td>
     </tr>`;
@@ -468,7 +467,6 @@ function filterRestockRecords() {
       <td>${r.date}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewRestock('${r.id}')"><i class="fas fa-eye"></i></button>
-        <button class="btn btn-sm btn-yellow" onclick="editRestock('${r.id}')"><i class="fas fa-edit"></i></button>
         <button class="btn btn-sm btn-danger" onclick="deleteRestock('${r.id}')"><i class="fas fa-trash"></i></button>
       </td>
     </tr>`;

@@ -112,13 +112,21 @@ CREATE TABLE IF NOT EXISTS online_orders (
 );
 
 CREATE TABLE IF NOT EXISTS custom_cake_orders (
-    order_id INT PRIMARY KEY,
+    custom_order_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NULL,
+    customer_name VARCHAR(100) NOT NULL,
+    customer_id INT,
     phone VARCHAR(20),
     design_details TEXT,
     description TEXT,
     pickup_date DATE,
     status ENUM('PendingApproval', 'Approved', 'Rejected') DEFAULT 'PendingApproval',
-    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
+    approved_by INT,
+    approved_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE SET NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    FOREIGN KEY (approved_by) REFERENCES employees(employee_id)
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -165,7 +173,7 @@ CREATE TABLE IF NOT EXISTS salaries (
 INSERT INTO product_categories (category_name) VALUES ('Pastry'), ('Bread'), ('Cake'), ('Cupcake');
 
 -- Products
-INSERT INTO products (name, price, stock_qty, category_id) VALUES 
+INSERT INTO products (name, price, stock_qty, category_id) VALUES
 ('Croissant', 4.50, 24, 1),
 ('Baguette', 5.00, 18, 2),
 ('Chocolate Cake', 28.00, 6, 3),
@@ -174,7 +182,7 @@ INSERT INTO products (name, price, stock_qty, category_id) VALUES
 ('Danish Pastry', 4.25, 30, 1);
 
 -- Employees
-INSERT INTO employees (name, username, password, email, role) VALUES 
+INSERT INTO employees (name, username, password, email, role) VALUES
 ('Maria Santos', 'salesassistant', '1234', 'maria.s@peoplesbakers.com', 'salesassistant'),
 ('James Chen', 'deliveryemployee', '1234', 'james.c@peoplesbakers.com', 'deliveryemployee'),
 ('Lisa Park', 'inventorymanager', '1234', 'lisa.p@peoplesbakers.com', 'inventorymanager'),
@@ -184,7 +192,7 @@ INSERT INTO employees (name, username, password, email, role) VALUES
 ('David Park', 'salessupervisor', '1234', 'david.p@peoplesbakers.com', 'salessupervisor');
 
 -- Suppliers
-INSERT INTO suppliers (name, contact) VALUES 
+INSERT INTO suppliers (name, contact) VALUES
 ('Bakery Supply Co.', '(555) 000-1111'),
 ('Dairy Distributors', '(555) 000-2222'),
 ('Grain & Mill', '(555) 000-3333'),
