@@ -11,7 +11,7 @@ CREATE TABLE Employee (
     base_salary DECIMAL(10, 2) NOT NULL,
     emp_address TEXT,
     emp_phone_no VARCHAR(20),
-    employee_role VARCHAR(100)
+    employee_role ENUM('salesassistant', 'deliveryemployee', 'inventorymanager', 'employeemanager', 'companymanager', 'financemanager', 'salessupervisor') NOT NULL
 );
 
 -- 2. Employee Subclass / Role Tables
@@ -73,6 +73,7 @@ CREATE TABLE LeaveRequest (
     leave_start DATE,
     leave_end DATE,
     leave_duration INT,
+    leave_status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
     FOREIGN KEY (emp_id) REFERENCES Employee(emp_id) ON DELETE CASCADE
 );
 
@@ -121,7 +122,7 @@ CREATE TABLE Product (
 CREATE TABLE StockAlert (
     alert_id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
-    alert_status VARCHAR(50),
+    alert_status ENUM('unread', 'read') DEFAULT 'unread',
     message TEXT,
     FOREIGN KEY (product_id) REFERENCES Product(product_id) ON DELETE CASCADE
 );
@@ -175,7 +176,7 @@ CREATE TABLE `Order` (
     payment_id INT,
     order_date DATETIME,
     price DECIMAL(10, 2),
-    status VARCHAR(50),
+    status ENUM('Pending', 'Preparing', 'Ready for Pickup', 'Out for Delivery', 'Delivered', 'Completed', 'Cancelled', 'Approved', 'Rejected') DEFAULT 'Pending',
     total DECIMAL(10, 2),
     FOREIGN KEY (payment_id) REFERENCES Payment(payment_id) ON DELETE SET NULL
 );
