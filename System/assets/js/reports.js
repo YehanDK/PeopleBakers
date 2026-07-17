@@ -113,22 +113,22 @@ function renderReportUIContainer(selectedDuration) {
         <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 48px; padding: 0 20px;">
             <div class="stat-card" style="flex: 1; text-align: center;">
                 <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">In Store Orders</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;">&lt; ${data.inStoreCount} orders &gt;</p>
+                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.inStoreCount} orders </p>
             </div>
             <div class="stat-card" style="flex: 1; text-align: center;">
                 <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">Custom Cake Order</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;">&lt; ${data.cakeCount} orders &gt;</p>
+                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.cakeCount} orders </p>
             </div>
             <div class="stat-card" style="flex: 1; text-align: center;">
                 <h3 style="font-size: 20px; color: #000000; font-weight: 600; margin-bottom: 12px;">Online Orders</h3>
-                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;">&lt; ${data.onlineCount} orders &gt;</p>
+                <p style="font-size: 22px; font-weight: bold; color: #333333; margin: 0;"> ${data.onlineCount} orders</p>
             </div>
         </div>
 
         <!-- Total Revenue Accumulation Section Display -->
         <div class="revenue-row" style="margin-bottom: 48px; padding-left: 20px; font-size: 22px; display: flex; gap: 40px;">
             <span class="lbl-revenue" style="font-weight: bold; color: #000000;">Total Revenue :</span>
-            <span class="val-revenue" style="font-weight: bold; color: #000000;">LKR &lt; ${data.totalRevenue.toFixed(2)} made by all sales &gt;</span>
+            <span class="val-revenue" style="font-weight: bold; color: #000000;">LKR ${data.totalRevenue.toFixed(2)}</span>
         </div>
 
         <!-- Sales Analytics Ranking Display Table Container Area -->

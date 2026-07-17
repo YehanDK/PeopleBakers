@@ -202,6 +202,7 @@ td { padding:0.7rem 0.3rem 0.7rem 0; border-bottom:1px solid #f0ebf7; }
     justify-content: space-between;
     margin-bottom: 40px;
     padding: 0 20px;
+    gap: 20px;
 }
 .stat-card {
     flex: 1;

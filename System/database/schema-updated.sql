@@ -269,13 +269,13 @@ INSERT INTO Product (category_id, product_name, quantity, description, price) VA
 
 -- Employees (Salaries adjusted to monthly LKR baselines)
 INSERT INTO Employee (emp_name, username, password, emp_email, base_salary, emp_address, emp_phone_no, employee_role) VALUES 
-('Maria Santos', 'salesassistant', '1234', 'maria.s@peoplesbakers.com', 45000.00, '12/A, Galle Road, Colombo 03', '0771234567', 'SalesAssistant'),
-('James Chen', 'deliveryemployee', '1234', 'james.c@peoplesbakers.com', 50000.00, '45, Kandy Road, Kiribathgoda', '0719876543', 'DeliveryEmployee'),
-('Lisa Park', 'inventorymanager', '1234', 'lisa.p@peoplesbakers.com', 85000.00, '88, Negombo Road, Wattala', '0765432109', 'InventoryManager'),
-('Robert Kim', 'employeemanager', '1234', 'robert.k@peoplesbakers.com', 95000.00, '102/3, High Level Road, Maharagama', '0751112223', 'EmployeeManager'),
-('Alex Rivera', 'companymanager', '1234', 'alex.r@peoplesbakers.com', 18000.00, '15, Alfred House Gardens, Colombo 03', '0777777777', 'CompanyManager'),
-('Sarah Chen', 'financemanager', '1234', 'sarah.c@peoplesbakers.com', 140000.00, '67/2, Havelock Road, Colombo 05', '0723334445', 'FinanceManager'),
-('David Park', 'salessupervisor', '1234', 'david.p@peoplesbakers.com', 75000.00, '23, Parliament Road, Kotte', '0778889990', 'SalesSupervisor');
+('Maria Santos', 'assistant', '1234', 'maria.s@peoplesbakers.com', 45000.00, '12/A, Galle Road, Colombo 03', '0771234567', 'SalesAssistant'),
+('James Chen', 'delivery', '1234', 'james.c@peoplesbakers.com', 50000.00, '45, Kandy Road, Kiribathgoda', '0719876543', 'DeliveryEmployee'),
+('Lisa Park', 'inventoryManager', '1234', 'lisa.p@peoplesbakers.com', 85000.00, '88, Negombo Road, Wattala', '0765432109', 'InventoryManager'),
+('Robert Kim', 'employeeManager', '1234', 'robert.k@peoplesbakers.com', 95000.00, '102/3, High Level Road, Maharagama', '0751112223', 'EmployeeManager'),
+('Alex Rivera', 'companyManager', '1234', 'alex.r@peoplesbakers.com', 18000.00, '15, Alfred House Gardens, Colombo 03', '0777777777', 'CompanyManager'),
+('Sarah Chen', 'financeManager', '1234', 'sarah.c@peoplesbakers.com', 140000.00, '67/2, Havelock Road, Colombo 05', '0723334445', 'FinanceManager'),
+('David Park', 'supervisor', '1234', 'david.p@peoplesbakers.com', 75000.00, '23, Parliament Road, Kotte', '0778889990', 'SalesSupervisor');
 
 -- SalesAssistant (emp_id = 1)
 INSERT INTO SalesAssistant (emp_id, assigned_register, assigned_shift) VALUES 

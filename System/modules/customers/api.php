@@ -23,18 +23,16 @@ class CustomersAPI {
         }
 
         try {
-            // Target the singular 'Customer' table using the updated column layout
-            $stmt = $this->pdo->prepare("SELECT customer_id, customer_name, customer_email, password, cust_phone_no, customer_address 
+            // FIX: Added SQL aliases (AS name, AS email, etc.) to match frontend expectations
+            $stmt = $this->pdo->prepare("SELECT customer_id, customer_name AS name, customer_email AS email, password, cust_phone_no AS phone, customer_address AS address 
                                          FROM Customer 
                                          WHERE customer_email = ?");
             $stmt->execute([$email]);
             $customer = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            // Directly evaluate plain-text password to match schema insertions
             if ($customer && $password === $customer['password']) {
-                unset($customer['password']); // Protect credentials before return
+                unset($customer['password']); 
                 
-                // Explicitly inject the customer role identity string for app.js parsing rules
                 $customer['role'] = 'customer'; 
 
                 return $this->handler->sendResponse(true, $customer, 'Login successful');
@@ -52,7 +50,8 @@ class CustomersAPI {
      */
     public function list() {
         try {
-            $sql = "SELECT customer_id, customer_name, customer_email, cust_phone_no, customer_address 
+            // FIX: Added SQL aliases
+            $sql = "SELECT customer_id, customer_name AS name, customer_email AS email, cust_phone_no AS phone, customer_address AS address 
                     FROM Customer 
                     ORDER BY customer_name ASC";
             
@@ -75,7 +74,8 @@ class CustomersAPI {
         }
         
         try {
-            $stmt = $this->pdo->prepare("SELECT customer_id, customer_name, customer_email, cust_phone_no, customer_address 
+            // FIX: Added SQL aliases
+            $stmt = $this->pdo->prepare("SELECT customer_id, customer_name AS name, customer_email AS email, cust_phone_no AS phone, customer_address AS address 
                                          FROM Customer 
                                          WHERE customer_id = ?");
             $stmt->execute([$id]);
@@ -97,29 +97,32 @@ class CustomersAPI {
     public function create() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         
-        $customer_name = $data['customer_name'] ?? '';
-        $customer_email = $data['customer_email'] ?? '';
+        // FIX: Fallback to frontend keys (name, email, phone, address)
+        $customer_name = $data['name'] ?? $data['customer_name'] ?? '';
+        $customer_email = $data['email'] ?? $data['customer_email'] ?? '';
         $password = $data['password'] ?? '';
-        $cust_phone_no = $data['cust_phone_no'] ?? null;
-        $customer_address = $data['customer_address'] ?? null;
+        $cust_phone_no = $data['phone'] ?? $data['cust_phone_no'] ?? null;
+        $customer_address = $data['address'] ?? $data['customer_address'] ?? null;
 
         if (empty($customer_name) || empty($customer_email) || empty($password)) {
             return $this->handler->sendResponse(false, null, 'Required configuration fields missing');
         }
         
         try {
-            // Write core profile metrics straight into the singular Customer entity configuration
+            $this->pdo->beginTransaction();
+            
             $stmt = $this->pdo->prepare("INSERT INTO Customer (customer_name, customer_email, password, cust_phone_no, customer_address) 
                                          VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$customer_name, $customer_email, $password, $cust_phone_no, $customer_address]);
             $customer_id = $this->pdo->lastInsertId();
             
-            // Automatically initialize a blank Cart for this new customer to support online store operations
             $stmtCart = $this->pdo->prepare("INSERT INTO Cart (customer_id, total) VALUES (?, 0.00)");
             $stmtCart->execute([$customer_id]);
             
+            $this->pdo->commit();
             $this->handler->sendResponse(true, ['customer_id' => $customer_id], 'Customer account registered successfully');
         } catch (Exception $e) {
+            $this->pdo->rollBack();
             $this->handler->sendResponse(false, null, 'Registration error occurred: ' . $e->getMessage());
         }
     }
@@ -138,10 +141,12 @@ class CustomersAPI {
         $fields = [];
         $params = [];
 
-        if (isset($data['customer_name'])) { $fields[] = 'customer_name = ?'; $params[] = $data['customer_name']; }
-        if (isset($data['customer_email'])) { $fields[] = 'customer_email = ?'; $params[] = $data['customer_email']; }
-        if (isset($data['cust_phone_no'])) { $fields[] = 'cust_phone_no = ?'; $params[] = $data['cust_phone_no']; }
-        if (isset($data['customer_address'])) { $fields[] = 'customer_address = ?'; $params[] = $data['customer_address']; }
+        // FIX: Map frontend keys to backend database columns and add password support
+        if (isset($data['name'])) { $fields[] = 'customer_name = ?'; $params[] = $data['name']; }
+        if (isset($data['email'])) { $fields[] = 'customer_email = ?'; $params[] = $data['email']; }
+        if (isset($data['phone'])) { $fields[] = 'cust_phone_no = ?'; $params[] = $data['phone']; }
+        if (isset($data['address'])) { $fields[] = 'customer_address = ?'; $params[] = $data['address']; }
+        if (isset($data['password']) && !empty($data['password'])) { $fields[] = 'password = ?'; $params[] = $data['password']; }
 
         if (empty($fields)) {
             return $this->handler->sendResponse(false, null, 'No field modifications provided');
@@ -170,7 +175,6 @@ class CustomersAPI {
         }
 
         try {
-            // Relational foreign key constraints handle clearing down linked Cart records automatically via ON DELETE CASCADE
             $stmt = $this->pdo->prepare("DELETE FROM Customer WHERE customer_id = ?");
             $stmt->execute([$id]);
 

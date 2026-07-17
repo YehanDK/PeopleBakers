@@ -116,6 +116,5 @@ const LeaveAPI = {
 const SalaryAPI = {
     list: (employee_id) => API.call('salary', 'list', 'GET', { employee_id }),
     create: (data) => API.call('salary', 'create', 'POST', data),
-    updateStatus: (salary_id, status) => API.call('salary', 'updateStatus', 'POST', { salary_id, status }),
     delete: (id) => API.call('salary', 'delete', 'POST', { id }),
 };

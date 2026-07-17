@@ -11,24 +11,25 @@ class SuppliersAPI {
     }
 
     public function list() {
-        $stmt = $this->pdo->query("SELECT * FROM suppliers ORDER BY name");
-        $this->handler->sendResponse(true, $stmt->fetchAll());
+        // FIX: Targets singular table 'Supplier' and maps 'supplier_name' to 'name' for the frontend
+        $stmt = $this->pdo->query("SELECT supplier_id, supplier_name AS name FROM Supplier ORDER BY supplier_name");
+        $this->handler->sendResponse(true, $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
     public function create() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $name = $data['name'] ?? '';
-        $contact = $data['contact'] ?? '';
+        $name = $data['name'] ?? $data['supplier_name'] ?? '';
 
         if (empty($name)) {
             return $this->handler->sendResponse(false, null, 'Supplier name is required');
         }
 
-        $stmt = $this->pdo->prepare("INSERT INTO suppliers (name, contact) VALUES (?, ?)");
-        $result = $stmt->execute([$name, $contact]);
+        // FIX: Targets new 'Supplier' table structure and its unique columns
+        $stmt = $this->pdo->prepare("INSERT INTO Supplier (supplier_name) VALUES (?)");
+        $result = $stmt->execute([$name]);
 
         if ($result) {
-            $this->handler->sendResponse(true, ['supplier_id' => $this->pdo->lastInsertId()], 'Supplier created successfully');
+            return $this->handler->sendResponse(true, ['supplier_id' => $this->pdo->lastInsertId()], 'Supplier created successfully');
         }
 
         $this->handler->sendResponse(false, null, 'Failed to create supplier');
@@ -37,27 +38,19 @@ class SuppliersAPI {
     public function update() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         $id = $data['supplier_id'] ?? 0;
+        $name = $data['name'] ?? $data['supplier_name'] ?? null;
 
         if (!$id) {
             return $this->handler->sendResponse(false, null, 'Supplier ID required');
         }
 
-        $fields = [];
-        $params = [];
-        foreach (['name', 'contact'] as $field) {
-            if (isset($data[$field])) {
-                $fields[] = "$field = ?";
-                $params[] = $data[$field];
-            }
-        }
-
-        if (empty($fields)) {
+        if ($name === null) {
             return $this->handler->sendResponse(false, null, 'No fields to update');
         }
 
-        $params[] = $id;
-        $stmt = $this->pdo->prepare("UPDATE suppliers SET " . implode(', ', $fields) . " WHERE supplier_id = ?");
-        $result = $stmt->execute($params);
+        // FIX: Targets 'Supplier' table and sets 'supplier_name'
+        $stmt = $this->pdo->prepare("UPDATE Supplier SET supplier_name = ? WHERE supplier_id = ?");
+        $result = $stmt->execute([$name, $id]);
 
         if ($result) {
             return $this->handler->sendResponse(true, null, 'Supplier updated successfully');
@@ -67,12 +60,15 @@ class SuppliersAPI {
     }
 
     public function delete() {
-        $id = $_GET['id'] ?? $_POST['id'] ?? 0;
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $id = $data['id'] ?? $_GET['id'] ?? $_POST['id'] ?? 0;
+        
         if (!$id) {
             return $this->handler->sendResponse(false, null, 'Supplier ID required');
         }
 
-        $stmt = $this->pdo->prepare("DELETE FROM suppliers WHERE supplier_id = ?");
+        // FIX: Targets uppercase singular table name
+        $stmt = $this->pdo->prepare("DELETE FROM Supplier WHERE supplier_id = ?");
         $result = $stmt->execute([$id]);
 
         if ($result) {

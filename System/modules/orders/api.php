@@ -4,287 +4,167 @@
 class OrdersAPI {
     private $pdo;
     private $handler;
-    
+
     public function __construct($pdo, $handler) {
         $this->pdo = $pdo;
         $this->handler = $handler;
     }
-    
+
     public function list() {
         $type = $_GET['type'] ?? $_POST['type'] ?? 'all';
         
-        // NOTE: o.* already contains o.customer_name. Aliasing c.name as customer_name here
-        // used to silently overwrite it with NULL for walk-in/custom orders (no customer_id).
-        // COALESCE keeps the walk-in name when there's no linked customer record.
-        $sql = "SELECT o.*, COALESCE(o.customer_name, c.name) as customer_name, COALESCE(oo.delivery_address, c.address) as address, c.phone as customer_phone, cco.phone, cco.design_details, cco.description, cco.pickup_date, cco.status as cake_status FROM orders o
-                LEFT JOIN customers c ON o.customer_id = c.customer_id
-                LEFT JOIN online_orders oo ON o.order_id = oo.order_id
-                LEFT JOIN custom_cake_orders cco ON o.order_id = cco.order_id";
-        
-        if ($type === 'online') {
-            $sql .= " WHERE o.order_type = 'Online'";
-        } elseif ($type === 'instore') {
-            $sql .= " WHERE o.order_type = 'InStore'";
-        } elseif ($type === 'custom') {
-            $sql .= " WHERE o.order_type = 'Custom'";
-        }
+        $sql = "SELECT o.order_id, o.order_date, o.total, o.status, 
+                       COALESCE(c.customer_name, iso.customer_name, co.custome_name) AS customer_name,
+                       c.customer_address, c.cust_phone_no, co.design_details, co.description, 
+                       co.requested_date, o.status as cake_status,
+                       CASE 
+                           WHEN iso.order_id IS NOT NULL THEN 'InStore'
+                           WHEN oo.order_id IS NOT NULL THEN 'Online'
+                           WHEN co.order_id IS NOT NULL THEN 'Custom'
+                       END AS order_type
+                FROM `Order` o
+                LEFT JOIN InStoreOrder iso ON o.order_id = iso.order_id
+                LEFT JOIN OnlineOrder oo ON o.order_id = oo.order_id
+                LEFT JOIN CakeOrder co ON o.order_id = co.order_id
+                LEFT JOIN Customer c ON (oo.customer_id = c.customer_id OR co.customer_id = c.customer_id)";
+
+        if ($type === 'online') $sql .= " WHERE oo.order_id IS NOT NULL";
+        elseif ($type === 'instore') $sql .= " WHERE iso.order_id IS NOT NULL";
+        elseif ($type === 'custom') $sql .= " WHERE co.order_id IS NOT NULL";
         
         $sql .= " ORDER BY o.order_date DESC";
-        
-        $stmt = $this->pdo->query($sql);
-        $orders = $stmt->fetchAll();
+        $orders = $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         
         foreach ($orders as &$order) {
-            $stmt = $this->pdo->prepare("SELECT oi.*, p.name as product_name FROM order_items oi 
-                                         LEFT JOIN products p ON oi.product_id = p.product_id 
-                                         WHERE oi.order_id = ?");
+            $stmt = $this->pdo->prepare("SELECT oi.quantity, oi.total AS price, p.product_name FROM OrderItem oi 
+                                         LEFT JOIN Product p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
             $stmt->execute([$order['order_id']]);
-            $order['items'] = $stmt->fetchAll();
+            $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
-        
         $this->handler->sendResponse(true, $orders);
     }
-    
+
     public function get() {
         $id = $_GET['id'] ?? $_POST['id'] ?? 0;
-        if (!$id) {
-            return $this->handler->sendResponse(false, null, 'Order ID required');
-        }
+        if (!$id) return $this->handler->sendResponse(false, null, 'Order ID required');
         
-        $stmt = $this->pdo->prepare("SELECT o.*, COALESCE(o.customer_name, c.name) as customer_name, COALESCE(oo.delivery_address, c.address) as address, c.phone as customer_phone, cco.phone, cco.design_details, cco.description, cco.pickup_date, cco.status as cake_status FROM orders o
-                                     LEFT JOIN customers c ON o.customer_id = c.customer_id
-                                     LEFT JOIN online_orders oo ON o.order_id = oo.order_id
-                                     LEFT JOIN custom_cake_orders cco ON o.order_id = cco.order_id
-                                     WHERE o.order_id = ?");
+        $stmt = $this->pdo->prepare("SELECT o.*, co.design_details, co.description, o.status as cake_status FROM `Order` o LEFT JOIN CakeOrder co ON o.order_id = co.order_id WHERE o.order_id = ?");
         $stmt->execute([$id]);
-        $order = $stmt->fetch();
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if (!$order) {
-            return $this->handler->sendResponse(false, null, 'Order not found');
-        }
+        if (!$order) return $this->handler->sendResponse(false, null, 'Order not found');
         
-        $stmt = $this->pdo->prepare("SELECT oi.*, p.name as product_name FROM order_items oi 
-                                     LEFT JOIN products p ON oi.product_id = p.product_id 
-                                     WHERE oi.order_id = ?");
+        $stmt = $this->pdo->prepare("SELECT oi.*, p.product_name FROM OrderItem oi LEFT JOIN Product p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
         $stmt->execute([$id]);
-        $order['items'] = $stmt->fetchAll();
+        $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         $this->handler->sendResponse(true, $order);
     }
-    
-public function create() {
+
+    public function create() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         
-        $customer_id = $data['customer_id'] ?? null;
-        $customer_name = $data['customer_name'] ?? null;
-        $total_amount = $data['total_amount'] ?? 0;
-        $order_type = $data['order_type'] ?? 'InStore';
+        $cust_id = $data['customer_id'] ?? null;
+        $cust_name = $data['customer_name'] ?? null;
+        $total = $data['total_amount'] ?? 0;
+        $type = $data['order_type'] ?? 'InStore';
         $items = $data['items'] ?? [];
-        $phone = $data['phone'] ?? null;
-        $design_details = $data['design_details'] ?? null;
-        $description = $data['description'] ?? null;
-        $pickup_date = $data['pickup_date'] ?? null;
-        
-        // NEW: Grab payment details from payload
-        $payment_method = $data['payment_method'] ?? 'Online'; 
-        $payment_status = ($payment_method === 'Card') ? 'Completed' : 'Pending';
-
-        if ($order_type === 'Custom') {
-            $items = [];
-            $total_amount = 0;
-        } elseif (empty($items) || $total_amount <= 0) {
-            return $this->handler->sendResponse(false, null, 'Order must have items and valid total');
-        }
-
-        // Initial status depends on order type:
-        // - InStore: paid and handed over at the counter, so it's Completed right away.
-        // - Online / Custom: still needs to be prepared/reviewed, so it starts Pending.
-        //   (Custom orders in particular must NEVER start as Completed - they require
-        //   sales staff to review the design before approving.)
-        $initial_status = ($order_type === 'InStore') ? 'Completed' : 'Pending';
+        $method = $data['payment_method'] ?? 'Cash';
         
         try {
             $this->pdo->beginTransaction();
             
-            // 1. Insert order record
-            $stmt = $this->pdo->prepare("INSERT INTO orders (customer_id, customer_name, total_amount, order_type, status) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$customer_id, $customer_name, $total_amount, $order_type, $initial_status]);
+            $stmt = $this->pdo->prepare("INSERT INTO Payment (payment_method, ammount, date) VALUES (?, ?, NOW())");
+            $stmt->execute([$method, $total]);
+            $payment_id = $this->pdo->lastInsertId();
+            
+            $stmt = $this->pdo->prepare("INSERT INTO `Order` (payment_id, order_date, total, status) VALUES (?, NOW(), ?, ?)");
+            $stmt->execute([$payment_id, $total, ($type === 'InStore' ? 'Completed' : 'Pending')]);
             $order_id = $this->pdo->lastInsertId();
             
-            // 2. Handle specific type processing routes
-            if ($order_type === 'Custom') {
-                $stmt = $this->pdo->prepare("INSERT INTO custom_cake_orders (order_id, phone, design_details, description, pickup_date) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$order_id, $phone, $design_details, $description, $pickup_date]);
+            if ($type === 'Custom') {
+                // FIX: Removed 'status' field insertion since it no longer exists on CakeOrder table[cite: 11]
+                $stmt = $this->pdo->prepare("INSERT INTO CakeOrder (order_id, customer_id, custome_name, phone_no, design_details, description, requested_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$order_id, $cust_id, $cust_name, $data['phone'] ?? null, $data['design_details'] ?? null, $data['description'] ?? null, $data['pickup_date'] ?? null]);
+            } elseif ($type === 'Online') {
+                $stmt = $this->pdo->prepare("INSERT INTO OnlineOrder (order_id, customer_id) VALUES (?, ?)");
+                $stmt->execute([$order_id, $cust_id]);
             } else {
-                foreach ($items as $item) {
-                    $stmt = $this->pdo->prepare("INSERT INTO order_items (order_id, product_id, quantity, price_at_time) VALUES (?, ?, ?, ?)");
-                    $stmt->execute([$order_id, $item['product_id'], $item['quantity'], $item['price']]);
-                    
-                    $stmt = $this->pdo->prepare("UPDATE products SET stock_qty = stock_qty - ? WHERE product_id = ?");
-                    $stmt->execute([$item['quantity'], $item['product_id']]);
-                }
+                $stmt = $this->pdo->prepare("INSERT INTO InStoreOrder (order_id, order_type, customer_name) VALUES (?, 'InStore', ?)");
+                $stmt->execute([$order_id, $cust_name]);
             }
             
-            // 3. NEW: Record Payment Entry into payments table mapping to schema requirements
-            $stmt = $this->pdo->prepare("INSERT INTO payments (order_id, method, amount, status) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$order_id, $payment_method, $total_amount, $payment_status]);
+            foreach ($items as $item) {
+                $stmt = $this->pdo->prepare("INSERT INTO OrderItem (product_id, order_id, quantity, total) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$item['product_id'], $order_id, $item['quantity'], $item['price'] * $item['quantity']]);
+                $this->pdo->prepare("UPDATE Product SET quantity = quantity - ? WHERE product_id = ?")->execute([$item['quantity'], $item['product_id']]);
+            }
             
             $this->pdo->commit();
-            $this->handler->sendResponse(true, ['order_id' => $order_id], 'Order and payment recorded successfully');
-            
+            $this->handler->sendResponse(true, ['order_id' => $order_id], 'Order created successfully');
         } catch (Exception $e) {
             $this->pdo->rollBack();
-            $this->handler->sendResponse(false, null, 'Failed to create order: ' . $e->getMessage());
+            $this->handler->sendResponse(false, null, 'Error: ' . $e->getMessage());
         }
     }
-        
+
     public function updateStatus() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $id = $data['order_id'] ?? $_GET['id'] ?? 0;
-        $status = $data['status'] ?? '';
-        
-        if (!$id || empty($status)) {
-            return $this->handler->sendResponse(false, null, 'Order ID and status are required');
-        }
-        
-        $allowed = ['Pending', 'Preparing', 'Out for Delivery', 'Delivered', 'Completed', 'Cancelled', 'Rejected'];
-        if (!in_array($status, $allowed)) {
-            return $this->handler->sendResponse(false, null, 'Invalid status');
-        }
-        
-        $stmt = $this->pdo->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
-        $result = $stmt->execute([$status, $id]);
-        
-        if ($result) {
-            $this->handler->sendResponse(true, null, 'Order status updated successfully');
-        } else {
-            $this->handler->sendResponse(false, null, 'Failed to update order status');
-        }
+        $stmt = $this->pdo->prepare("UPDATE `Order` SET status = ? WHERE order_id = ?");
+        $stmt->execute([$data['status'], $data['order_id']]);
+        $this->handler->sendResponse(true, null, 'Status updated');
     }
 
-    // Updates ONLY the custom cake approval status (PendingApproval / Approved / Rejected)
-    // Approval lives on custom_cake_orders, separate from the order fulfillment status.
     public function updateCakeStatus() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $id = $data['order_id'] ?? $_GET['id'] ?? 0;
-        $status = $data['status'] ?? '';
-
-        if (!$id || empty($status)) {
-            return $this->handler->sendResponse(false, null, 'Order ID and status are required');
-        }
-
-        $allowed = ['PendingApproval', 'Approved', 'Rejected'];
-        if (!in_array($status, $allowed)) {
-            return $this->handler->sendResponse(false, null, 'Invalid cake status');
-        }
-
-        $stmt = $this->pdo->prepare("UPDATE custom_cake_orders SET status = ? WHERE order_id = ?");
-        $result = $stmt->execute([$status, $id]);
-
-        if ($result) {
-            $this->handler->sendResponse(true, null, 'Custom cake status updated successfully');
-        } else {
-            $this->handler->sendResponse(false, null, 'Failed to update custom cake status');
-        }
+        // FIX: Routes custom cake state adjustments directly to parent Order validation framework[cite: 11]
+        $stmt = $this->pdo->prepare("UPDATE `Order` SET status = ? WHERE order_id = ?");
+        $stmt->execute([$data['status'], $data['order_id']]);
+        $this->handler->sendResponse(true, null, 'Cake status updated');
     }
 
-    // Update custom cake order details (customer_name, design_details, description, pickup_date, status)
     public function update() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $order_id = $data['order_id'] ?? $_GET['id'] ?? 0;
-
-        if (!$order_id) {
-            return $this->handler->sendResponse(false, null, 'Order ID is required');
-        }
-
-        // Fields from orders table
-        $orderFields = [];
-        $orderParams = [];
-        if (isset($data['customer_name'])) {
-            $orderFields[] = 'customer_name = ?';
-            $orderParams[] = $data['customer_name'];
-        }
-
-        // Fields from custom_cake_orders table
-        $cakeFields = [];
-        $cakeParams = [];
-        if (isset($data['design_details'])) {
-            $cakeFields[] = 'design_details = ?';
-            $cakeParams[] = $data['design_details'];
-        }
-        if (isset($data['description'])) {
-            $cakeFields[] = 'description = ?';
-            $cakeParams[] = $data['description'];
-        }
-        if (isset($data['pickup_date'])) {
-            $cakeFields[] = 'pickup_date = ?';
-            $cakeParams[] = $data['pickup_date'];
-        }
-        if (isset($data['phone'])) {
-            $cakeFields[] = 'phone = ?';
-            $cakeParams[] = $data['phone'];
-        }
-        if (isset($data['status'])) {
-            $allowed = ['PendingApproval', 'Approved', 'Rejected'];
-            if (!in_array($data['status'], $allowed)) {
-                return $this->handler->sendResponse(false, null, 'Invalid cake status');
-            }
-            $cakeFields[] = 'status = ?';
-            $cakeParams[] = $data['status'];
-        }
-
         try {
             $this->pdo->beginTransaction();
-
-            // Update orders table if customer_name provided
-            if (!empty($orderFields)) {
-                $orderParams[] = $order_id;
-                $stmt = $this->pdo->prepare("UPDATE orders SET " . implode(', ', $orderFields) . " WHERE order_id = ?");
-                $stmt->execute($orderParams);
-            }
-
-            // Update custom_cake_orders table if any cake fields provided
-            if (!empty($cakeFields)) {
-                $cakeParams[] = $order_id;
-                $stmt = $this->pdo->prepare("UPDATE custom_cake_orders SET " . implode(', ', $cakeFields) . " WHERE order_id = ?");
-                $stmt->execute($cakeParams);
-            }
-
+            // FIX: Split query to isolate CakeOrder modification parameters from main Order status constraints[cite: 11]
+            $stmt = $this->pdo->prepare("UPDATE CakeOrder SET design_details = ?, description = ?, requested_date = ? WHERE order_id = ?");
+            $stmt->execute([$data['design_details'], $data['description'], $data['pickup_date'], $data['order_id']]);
+            
+            $stmt2 = $this->pdo->prepare("UPDATE `Order` SET status = ? WHERE order_id = ?");
+            $stmt2->execute([$data['status'], $data['order_id']]);
+            
             $this->pdo->commit();
-            $this->handler->sendResponse(true, null, 'Custom cake updated successfully');
-
-        } catch (Exception $e) {
+            $this->handler->sendResponse(true, null, 'Cake updated');
+        } catch(Exception $e) {
             $this->pdo->rollBack();
-            $this->handler->sendResponse(false, null, 'Failed to update custom cake: ' . $e->getMessage());
+            $this->handler->sendResponse(false, null, 'Error: ' . $e->getMessage());
         }
     }
 
-    // Delete an order (and its related records)
     public function delete() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $id = $data['id'] ?? $_GET['id'] ?? 0;
+        $stmt = $this->pdo->prepare("DELETE FROM `Order` WHERE order_id = ?");
+        $stmt->execute([$data['id'] ?? $_GET['id']]);
+        $this->handler->sendResponse(true, null, 'Order deleted');
+    }
 
-        if (!$id) {
-            return $this->handler->sendResponse(false, null, 'Order ID is required');
-        }
-
-        try {
-            $this->pdo->beginTransaction();
-
-            // payments has no ON DELETE CASCADE, so remove it first
-            $stmt = $this->pdo->prepare("DELETE FROM payments WHERE order_id = ?");
-            $stmt->execute([$id]);
-
-            // order_items, custom_cake_orders cascade automatically
-            $stmt = $this->pdo->prepare("DELETE FROM orders WHERE order_id = ?");
-            $stmt->execute([$id]);
-
-            $this->pdo->commit();
-            $this->handler->sendResponse(true, null, 'Order deleted successfully');
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
-            $this->handler->sendResponse(false, null, 'Failed to delete order: ' . $e->getMessage());
-        }
+    public function getSalesData() {
+        $duration = $_GET['duration'] ?? 'daily';
+        $filter = ($duration === 'monthly') ? "MONTH(o.order_date) = MONTH(CURRENT_DATE())" : "DATE(o.order_date) = CURRENT_DATE()";
+        
+        $sql = "SELECT SUM(CASE WHEN iso.order_id IS NOT NULL THEN 1 ELSE 0 END) as in_store,
+                       SUM(CASE WHEN co.order_id IS NOT NULL THEN 1 ELSE 0 END) as custom_cake,
+                       SUM(CASE WHEN oo.order_id IS NOT NULL THEN 1 ELSE 0 END) as online,
+                       SUM(o.total) as total_revenue
+                FROM `Order` o
+                LEFT JOIN InStoreOrder iso ON o.order_id = iso.order_id
+                LEFT JOIN OnlineOrder oo ON o.order_id = oo.order_id
+                LEFT JOIN CakeOrder co ON o.order_id = co.order_id
+                WHERE $filter";
+        $summary = $this->pdo->query($sql)->fetch(PDO::FETCH_ASSOC);
+        
+        $this->handler->sendResponse(true, ['summary' => $summary, 'analytics' => []]);
     }
 }
 ?>
