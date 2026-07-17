@@ -44,6 +44,23 @@ class ExpensesAPI {
         }
     }
 
-    
+    // delete the record
+    public function delete() {
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $id = $data['id'] ?? $_GET['id'] ?? 0;
+
+        if (!$id) {
+            return $this->handler->sendResponse(false, null, 'Expense ID required.');
+        }
+
+        $stmt = $this->pdo->prepare("DELETE FROM ExpenseRecord WHERE expense_record_id = ?");
+        $result = $stmt->execute([$id]);
+
+        if ($result) {
+            $this->handler->sendResponse(true, null, 'Expense record deleted successfully.');
+        } else {
+            $this->handler->sendResponse(false, null, 'Failed to remove data layer parameter.');
+        }
+    }
 }
 ?>
