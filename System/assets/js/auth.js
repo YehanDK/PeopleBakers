@@ -15,6 +15,7 @@ let stockAlerts = [];
 let instoreCart = [];
 let inStoreOrderCounter = 1;
 let customCakeCounter = 1;
+let expenseRecords = []; 
 
 function handleLogout() {
     currentUser = null;
@@ -79,6 +80,7 @@ async function loadAppData() {
                 suppliers = suppliersResponse.data || [];
             }
         }
+        
         // TODO : employees api
         if (typeof EmployeeAPI !== 'undefined') {
             const employeesResponse = await EmployeeAPI.list();
@@ -97,6 +99,19 @@ async function loadAppData() {
             const leaveResponse = await LeaveAPI.list();
             if (leaveResponse.success) {
                 leaveRequests = leaveResponse.data || [];
+            }
+        }
+
+        if (typeof ExpensesAPI !== 'undefined') {
+        const expenseResponse = await ExpensesAPI.list();
+        if (expenseResponse.success) {
+            expenseRecords = (expenseResponse.data || []).map(r => ({
+                id: r.id,
+                bill_number: r.bill_number || 'N/A',
+                description: r.description || 'No description applied',
+                date: r.date || '',
+                amount: Number(r.amount || 0)
+                }));
             }
         }
 
@@ -171,7 +186,7 @@ async function loadAppData() {
         }
     } catch (error) {
         console.error('Failed to load app data:', error);
-    }
+    }    
 }
 
 // TODO :employee login 

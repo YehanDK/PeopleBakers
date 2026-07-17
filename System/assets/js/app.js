@@ -101,11 +101,13 @@ const ROLE_CONFIG = {
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
       { id: 'calc-salary', icon: 'fa-calculator', label: 'Calculate Salary' },
       { id: 'sales-reports', icon: 'fa-chart-simple', label: 'Generate Reports' },
+      { id: 'expense-records', icon: 'fa-wallet', label: 'Expense Records' },
     ],
     renderMap: {
       'dashboard': renderFinanceManagerDashboard,
       'calc-salary': renderCalculateSalary,
       'sales-reports': renderReportUIContainer,
+      'expense-records': renderExpenseRecords,
     }
   },
   salessupervisor: {

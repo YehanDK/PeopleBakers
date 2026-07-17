@@ -133,3 +133,9 @@ const CustomAPI = {
     // Reuses the existing 'delete' endpoint
     delete: (custom_order_id) => API.call('orders', 'delete', 'POST', { id: custom_order_id })
 };
+
+// expense record api
+const ExpensesAPI = {
+    list: () => API.call('expenses', 'list', 'GET'),
+    create: (data) => API.call('expenses', 'create', 'POST', data)
+};
