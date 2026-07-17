@@ -122,8 +122,14 @@ const SalaryAPI = {
 // Custom Cake Order workflow (sales assistant requests -> supervisor approves -> order created)
 const CustomAPI = {
     create: (data) => API.call('custom', 'create', 'POST', data),
-    list: (status) => API.call('custom', 'list', 'GET', status ? { status } : {}),
-    approve: (custom_order_id, approved_by, price) => API.call('custom', 'approve', 'POST', { custom_order_id, approved_by, price: price || 0 }),
-    reject: (custom_order_id) => API.call('custom', 'reject', 'POST', { custom_order_id }),
-    delete: (custom_order_id) => API.call('custom', 'delete', 'POST', { custom_order_id }),
+list: () => API.call('orders', 'list', 'GET', { type: 'custom' }),
+    
+    // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Approved'
+    approve: (custom_order_id, approved_by, price) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Approved' }),
+    
+    // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Rejected'
+    reject: (custom_order_id) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Rejected' }),
+    
+    // Reuses the existing 'delete' endpoint
+    delete: (custom_order_id) => API.call('orders', 'delete', 'POST', { id: custom_order_id })
 };
