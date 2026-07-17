@@ -1,6 +1,11 @@
 // ============================================================
 //  ORDER MANAGEMENT
 // ============================================================
+// to retrive the in stoore customer name without being overriden by a refresh. ( don't know something keeps hapening, the element is there but the value is beign overriden)
+let tempCustomerName = '';
+function updateTempCustomerName(val) {
+    tempCustomerName = val;
+}
 
 function renderInStoreOrders() {
   const itemOptions = inventoryItems.map(item => `<option value="${item.name}">${item.name} - LKR ${Number(item.price || 0).toFixed(2)}</option>`).join('');
@@ -54,7 +59,7 @@ function renderInStoreOrders() {
       <div class="form-row" style="gap:1rem;flex-wrap:wrap;align-items:flex-end;">
         <div class="form-group" style="flex:1;min-width:220px;">
           <label>Customer Name</label>
-          <input type="text" id="instoreCustomer" placeholder="Customer Name" />
+          <input type="text" id="instoreCustomer" placeholder="Customer Name" oninput="updateTempCustomerName(this.value)"/>
         </div>
         <div class="form-group" style="flex:1;min-width:220px;">
           <label>Item</label>
@@ -120,7 +125,9 @@ function addInStoreCartItem() {
 }
 
 async function placeInStoreOrder() {
-  const customer = document.getElementById('instoreCustomer').value.trim() || 'Guest Customer';
+  let customer = document.getElementById('instoreCustomer').value.trim();
+  customer = customer || tempCustomerName || 'Guest Customer';
+
   if (instoreCart.length === 0) {
     alert('Please add at least one item to the order.');
     return;

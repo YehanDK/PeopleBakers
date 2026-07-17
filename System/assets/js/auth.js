@@ -123,7 +123,7 @@ async function loadAppData() {
                 inStoreOrders = orders.filter(o => o.order_type === 'instore');
                 customCakeRequests = orders.filter(o => o.order_type === 'custom').map(order => ({
                     ...order,
-                    customer: order.customer_name || order.customer || 'Guest Customer',
+                    customer: order.customer_name || order.customer,
                     design: order.design_details || order.description || 'Custom cake request',
                     phone: order.phone || 'N/A',
                     description: order.description || order.design_details || 'No description provided',
