@@ -315,7 +315,7 @@ INSERT INTO Supplier (supplier_name) VALUES
 
 -- Delivery Fees (Tier pricing in LKR)
 INSERT INTO DeliveryFee (delivery_tier, delivery_fee) VALUES 
-('Standard', 150.00),
+('Standard', 150.00);
 
 -- Customers
 INSERT INTO Customer (customer_name, customer_email, password, cust_phone_no, customer_address) VALUES 
