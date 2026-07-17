@@ -10,7 +10,7 @@ function getFilteredSalesSummaryData(duration) {
   // Gracefully fallback to all orders if global state arrays are undefined
   const inStore = typeof inStoreOrders !== 'undefined' ? inStoreOrders : [];
   const online = typeof onlineOrders !== 'undefined' ? onlineOrders : [];
-  const cakes = typeof customCakeOrders !== 'undefined' ? customCakeOrders : [];
+  const cakes = typeof customCakeRequests !== 'undefined' ? customCakeRequests : [];
 
   const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const currentMonthStr = new Date().toISOString().slice(0, 7); // YYYY-MM

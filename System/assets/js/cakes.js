@@ -427,7 +427,7 @@ async function deleteCustomCake(id) {
 }
 
 function renderViewCustomCakeRequest() {
-  const pendingCakes = customCakeRequests.filter(c => c.status === 'PendingApproval');
+  const pendingCakes = customCakeRequests.filter(c => c.status === 'Pending');
   const rejectedCakes = customCakeRequests.filter(c => c.status === 'Rejected');
 
   let pendingRows = pendingCakes.map(c => `

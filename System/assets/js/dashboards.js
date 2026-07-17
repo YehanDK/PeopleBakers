@@ -56,8 +56,8 @@ function renderCompanyManagerDashboard() {
 
 // ----- Finance Manager Dashboard -----
 async function renderFinanceManagerDashboard() {
-  // Revenue = total of all online + in-store order sales (loaded in loadAppData)
-  const orders = [...onlineOrders, ...inStoreOrders];
+  // Revenue = total of all online + in-store order sales  + custom cakes
+  const orders = [...onlineOrders, ...inStoreOrders, ...customCakeRequests];
   const revenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
 
   // Salaries = sum of all recorded salary payouts (fetched live)

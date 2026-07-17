@@ -175,7 +175,6 @@ CREATE TABLE `Order` (
     order_id INT AUTO_INCREMENT PRIMARY KEY,
     payment_id INT,
     order_date DATETIME,
-    price DECIMAL(10, 2),
     status ENUM('Pending', 'Preparing', 'Ready for Pickup', 'Out for Delivery', 'Delivered', 'Completed', 'Cancelled', 'Approved', 'Rejected') DEFAULT 'Pending',
     total DECIMAL(10, 2),
     FOREIGN KEY (payment_id) REFERENCES Payment(payment_id) ON DELETE SET NULL

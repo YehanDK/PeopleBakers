@@ -119,9 +119,9 @@ async function loadAppData() {
                     })) : []
                 }));
 
-                onlineOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'online');
-                inStoreOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'instore');
-                customCakeRequests = orders.filter(order => (order.order_type || '').toLowerCase() === 'custom').map(order => ({
+                onlineOrders = orders.filter(order => (order.order_type || '') === 'Online');
+                inStoreOrders = orders.filter(order => (order.order_type || '') === 'InStore');
+                customCakeRequests = orders.filter(order => (order.order_type || '') === 'Online').map(order => ({
                     ...order,
                     customer: order.customer_name || order.customer || 'Guest Customer',
                     design: order.design_details || order.description || 'Custom cake request',
