@@ -127,7 +127,7 @@ async function loadAppData() {
                     design: order.design_details || order.description || 'Custom cake request',
                     phone: order.phone || 'N/A',
                     description: order.description || order.design_details || 'No description provided',
-                    date: order.date || order.order_date || '',
+                    date: order.requested_date || order.order_date || '', // <--- Change this line to map requested_date
                     status: order.cake_status || order.status || 'Pending',
                     fulfillmentStatus: order.status || 'Pending'
                 }));

@@ -122,7 +122,7 @@ const SalaryAPI = {
 // Custom Cake Order workflow (sales assistant requests -> supervisor approves -> order created)
 const CustomAPI = {
     create: (data) => API.call('custom', 'create', 'POST', data),
-list: () => API.call('orders', 'list', 'GET', { type: 'custom' }),
+    list: () => API.call('orders', 'list', 'GET', { type: 'custom' }),
     
     // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Approved'
     approve: (custom_order_id, approved_by, price) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Approved' }),
