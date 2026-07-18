@@ -6,7 +6,7 @@ const CAKE_FULFILLMENT_STATUSES = ['Preparing', 'Ready for Pickup', 'Completed']
 
 // Sales assistants only ever see cakes the supervisor has approved.
 function getVisibleCakeRequests() {
-  if (currentUser && currentUser.role === 'salesassistant') {
+  if (currentUser && currentUser.role === 'salesassistant' || currentUser.role === 'salessupervisor') {
     const visibleStatuses = ['Approved', 'Preparing', 'Ready for Pickup', 'Completed'];
     return customCakeRequests.filter(c => visibleStatuses.includes(c.status));
   }
@@ -31,7 +31,8 @@ function renderCustomCakeOrders() {
       <td>${c.customer}</td>
       <td>${c.design}</td>
       <td>${c.date}</td>
-      <td><span class="badge ${fulfillmentBadgeClass(c.fulfillmentStatus)}">${c.fulfillmentStatus}</span></td>
+      <!-- Fixed: Changed from c.fulfillmentStatus to c.status -->
+      <td><span class="badge ${fulfillmentBadgeClass(c.status)}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateCustomCakeStatus('${c.id}')"><i class="fas fa-sync"></i> Update Status</button>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
@@ -90,7 +91,8 @@ function filterCustomCakeOrders() {
       <td>${c.customer}</td>
       <td>${c.design}</td>
       <td>${c.date}</td>
-      <td><span class="badge ${fulfillmentBadgeClass(c.fulfillmentStatus)}">${c.fulfillmentStatus}</span></td>
+      <!-- Fixed: Changed from c.fulfillmentStatus to c.status -->
+      <td><span class="badge ${fulfillmentBadgeClass(c.status)}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateCustomCakeStatus('${c.id}')"><i class="fas fa-sync"></i> Update Status</button>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
@@ -105,7 +107,7 @@ function filterCustomCakeOrders() {
 async function updateCustomCakeStatus(id) {
   const order = getVisibleCakeRequests().find(c => String(c.id) === String(id));
   if (!order) return;
-  const currentIndex = CAKE_FULFILLMENT_STATUSES.indexOf(order.fulfillmentStatus);
+  const currentIndex = CAKE_FULFILLMENT_STATUSES.indexOf(order.status);
   const nextIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
   if (nextIndex < CAKE_FULFILLMENT_STATUSES.length) {
     const nextStatus = CAKE_FULFILLMENT_STATUSES[nextIndex];
@@ -116,9 +118,9 @@ async function updateCustomCakeStatus(id) {
     }
     await loadAppData();
     showToast(`Custom cake ${id} status updated to ${nextStatus}`);
-    renderTab('custom-cake');
+    renderTab(currentTab); // Dynamically reloads whichever tab calling context is active
   } else {
-    showToast(`Custom cake ${id} is already ${order.fulfillmentStatus}.`);
+    showToast(`Custom cake ${id} is already ${order.status}.`);
   }
 }
 
