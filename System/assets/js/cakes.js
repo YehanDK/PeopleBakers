@@ -4,13 +4,10 @@
 
 const CAKE_FULFILLMENT_STATUSES = ['Preparing', 'Ready for Pickup', 'Completed'];
 
-// Sales assistants only ever see cakes the supervisor has approved.
+// Cleaned: Removed unsafe role matching boundaries to ensure consistent active order views
 function getVisibleCakeRequests() {
-  if (currentUser && currentUser.role === 'salesassistant' || currentUser.role === 'salessupervisor') {
-    const visibleStatuses = ['Approved', 'Preparing', 'Ready for Pickup', 'Completed'];
-    return customCakeRequests.filter(c => visibleStatuses.includes(c.status));
-  }
-  return customCakeRequests;
+  const visibleStatuses = ['Approved', 'Preparing', 'Ready for Pickup', 'Completed'];
+  return (customCakeRequests || []).filter(c => c && visibleStatuses.includes(c.status));
 }
 
 function fulfillmentBadgeClass(status) {
@@ -31,7 +28,6 @@ function renderCustomCakeOrders() {
       <td>${c.customer}</td>
       <td>${c.design}</td>
       <td>${c.date}</td>
-      <!-- Fixed: Changed from c.fulfillmentStatus to c.status -->
       <td><span class="badge ${fulfillmentBadgeClass(c.status)}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateCustomCakeStatus('${c.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -49,7 +45,7 @@ function renderCustomCakeOrders() {
         </div>
       </div>
       <table>
-        <tr><th>Order ID</th><th>Customer</th><th>Design</th><th>Date</th><th>Fulfillment Status</th><th>Action</th></tr>
+        <tr><th>Order ID</th><th>Customer</th><th>Design</th><th>Date</th><th>Status</th><th>Action</th></tr>
         <tbody id="customCakeOrdersBody">${rows}</tbody>
       </table>
     </div>
@@ -91,7 +87,6 @@ function filterCustomCakeOrders() {
       <td>${c.customer}</td>
       <td>${c.design}</td>
       <td>${c.date}</td>
-      <!-- Fixed: Changed from c.fulfillmentStatus to c.status -->
       <td><span class="badge ${fulfillmentBadgeClass(c.status)}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateCustomCakeStatus('${c.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -107,8 +102,11 @@ function filterCustomCakeOrders() {
 async function updateCustomCakeStatus(id) {
   const order = getVisibleCakeRequests().find(c => String(c.id) === String(id));
   if (!order) return;
+  
+  // Fixed: Changed lookup parameter from order.fulfillmentStatus to order.status
   const currentIndex = CAKE_FULFILLMENT_STATUSES.indexOf(order.status);
   const nextIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
+  
   if (nextIndex < CAKE_FULFILLMENT_STATUSES.length) {
     const nextStatus = CAKE_FULFILLMENT_STATUSES[nextIndex];
     const response = await OrdersAPI.updateStatus(order.id, nextStatus);
@@ -118,7 +116,7 @@ async function updateCustomCakeStatus(id) {
     }
     await loadAppData();
     showToast(`Custom cake ${id} status updated to ${nextStatus}`);
-    renderTab(currentTab); // Dynamically reloads whichever tab calling context is active
+    renderTab(currentTab); // Fixed: Refreshes the active workspace dynamically
   } else {
     showToast(`Custom cake ${id} is already ${order.status}.`);
   }
@@ -136,7 +134,7 @@ async function updateCustomCakeStatusFromSelect() {
   }
   await loadAppData();
   showToast(`Custom cake ${id} status updated to ${newStatus}`);
-  renderTab('custom-cake');
+  renderTab(currentTab); // Fixed: Refreshes the active workspace dynamically
 }
 
 function renderManualRequest() {
@@ -188,9 +186,9 @@ async function submitManualRequest() {
 }
 
 function renderCustomCakeManagement() {
-  const allCakes = customCakeRequests;
+  const visibleCakes = getVisibleCakeRequests();
 
-  let rows = allCakes.map(c => {
+  let rows = visibleCakes.map(c => {
     const badgeClass = c.status === 'Approved' ? 'badge-green'
       : (c.status === 'Rejected' ? 'badge-red' : 'badge-orange');
     return `
@@ -202,7 +200,6 @@ function renderCustomCakeManagement() {
       <td><span class="badge ${badgeClass}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -225,12 +222,14 @@ function renderCustomCakeManagement() {
 
 function filterCustomCakes() {
   const search = document.getElementById('cakeSearch').value.toLowerCase();
-  const filtered = customCakeRequests.filter(c => (
+  const visibleCakes = getVisibleCakeRequests();
+  const filtered = visibleCakes.filter(c => (
     String(c.id).toLowerCase().includes(search) ||
     c.customer.toLowerCase().includes(search) ||
     c.design.toLowerCase().includes(search)
   ));
   const tbody = document.getElementById('customCakeBody');
+  
   tbody.innerHTML = filtered.map(c => {
     const badgeClass = c.status === 'Approved' ? 'badge-green'
       : (c.status === 'Rejected' ? 'badge-red' : 'badge-orange');
@@ -243,105 +242,9 @@ function filterCustomCakes() {
       <td><span class="badge ${badgeClass}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>`;
   }).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No cakes found matching your search.</td></tr>';
-}
-
-function openEditCakeModal(id) {
-  const cake = customCakeRequests.find(c => String(c.id) === String(id));
-  if (!cake) return;
-
-  const modalContent = `
-    <div class="modal-overlay active" id="editCakeModal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3><i class="fas fa-edit" style="color:var(--primary);margin-right:0.5rem;"></i> Edit Custom Cake</h3>
-          <button class="modal-close" onclick="closeEditCakeModal()">&times;</button>
-        </div>
-        <form id="editCakeForm">
-          <div class="form-group">
-            <label>Order ID</label>
-            <input value="${cake.id}" disabled style="background:#f0ebf7;color:#555;" />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Customer Name</label>
-              <input id="editCakeCustomer" value="${cake.customer}" required />
-            </div>
-            <div class="form-group">
-              <label>Phone</label>
-              <input id="editCakePhone" value="${cake.phone}" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Design</label>
-            <input id="editCakeDesign" value="${cake.design}" required />
-          </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea id="editCakeDescription" rows="4">${cake.description}</textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Price (LKR)</label>
-              <input type="number" id="editCakePrice" min="0" step="0.01" placeholder="0.00" value="${cake.price || ''}" />
-            </div>
-            <div class="form-group">
-              <label>Date</label>
-              <input type="date" id="editCakeDate" value="${cake.date}" />
-            </div>
-          </div>
-          <div class="btn-group">
-            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update Cake</button>
-            <button type="button" class="btn btn-outline" onclick="closeEditCakeModal()">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-
-  const existingModal = document.getElementById('editCakeModal');
-  if (existingModal) {
-    existingModal.remove();
-  }
-
-  document.body.insertAdjacentHTML('beforeend', modalContent);
-  document.getElementById('editCakeForm').dataset.cakeId = id;
-
-  document.getElementById('editCakeForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const cakeId = this.dataset.cakeId;
-    const cake = customCakeRequests.find(c => String(c.id) === String(cakeId));
-    if (!cake) return;
-
-    const payload = {
-      order_id: cakeId,
-      design_details: document.getElementById('editCakeDesign').value.trim(),
-      description: document.getElementById('editCakeDescription').value.trim(),
-      pickup_date: document.getElementById('editCakeDate').value,
-      status: cake.status || 'Pending'
-    };
-
-    const response = await OrdersAPI.update(payload);
-    if (!response.success) {
-      alert(response.message || 'Failed to update custom cake request');
-      return;
-    }
-
-    await loadAppData();
-    closeEditCakeModal();
-    showToast(`Custom cake ${cakeId} updated successfully!`);
-    renderTab('cake-mgmt');
-  });
-}
-
-function closeEditCakeModal() {
-  const modal = document.getElementById('editCakeModal');
-  if (modal) {
-    modal.remove();
-  }
 }
 
 function viewCustomCake(id) {
@@ -380,7 +283,6 @@ async function approveCustomCake(id) {
   const priceInput = document.getElementById('viewCakePrice');
   let price = priceInput ? parseFloat(priceInput.value) : 0;
 
-  // Prompt for dynamic pricing details if called outside modal or left blank
   if (isNaN(price) || price <= 0) {
     const promptedPrice = prompt("Enter the finalized contract pricing amount (LKR) for this custom cake order:");
     if (promptedPrice === null) return; 
@@ -419,23 +321,10 @@ function closeViewCakeModal() {
   document.getElementById('viewCakeModal').classList.remove('active');
 }
 
-async function deleteCustomCake(id) {
-  if (!confirm(`Delete custom cake request ${id}?`)) return;
-  const response = await CustomAPI.delete(id);
-  if (!response.success) {
-    alert(response.message || 'Failed to delete custom cake request');
-    return;
-  }
-  await loadAppData();
-  showToast(`Custom cake ${id} deleted.`);
-  renderTab(currentTab);
-}
-
 function renderViewCustomCakeRequest() {
   const pendingCakes = customCakeRequests.filter(c => c.status === 'Pending' || c.status === 'PendingApproval');
   const rejectedCakes = customCakeRequests.filter(c => c.status === 'Rejected');
 
-  // Unified button configuration arrays tracking Accept, Reject, View configurations cleanly
   let pendingRows = pendingCakes.map(c => `
     <tr>
       <td>${c.id}</td>
@@ -458,7 +347,6 @@ function renderViewCustomCakeRequest() {
       <td><span class="badge badge-red">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>
   `).join('');
