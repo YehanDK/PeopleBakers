@@ -69,45 +69,55 @@ public function list() {
     }
 
     public function create() {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $data = $input ?: $_POST;
+    $input = json_decode(file_get_contents('php://input'), true);
+    $data = $input ?: $_POST;
+    $name = $data['name'] ?? '';
+    $username = $data['username'] ?? '';
+    $password = $data['password'] ?? '';
+    $email = $data['email'] ?? '';
+    $phone = $data['phone'] ?? '';
+    $role = $data['role'] ?? '';
+    $address = $data['address'] ?? '';
+    
+    // Reads client-side explicit form settings parameter, falling back to legacy baseline if missing
+    $salary = isset($data['salary']) ? floatval($data['salary']) : 0;
 
-        $name = $data['name'] ?? '';
-        $username = $data['username'] ?? '';
-        $password = $data['password'] ?? '';
-        $email = $data['email'] ?? '';
-        $phone = $data['phone'] ?? '';
-        $role = $data['role'] ?? ''; // e.g., 'salesassistant'
-        $address = $data['address'] ?? '';
-
-        if (empty($name) || empty($username) || empty($password) || empty($email) || empty($role)) {
-            return $this->handler->sendResponse(false, null, 'Missing required fields');
-        }
-
-        // Format role to match the PascalCase subclass table names (e.g., SalesAssistant)[cite: 2]
-        $formattedRole = str_replace(' ', '', ucwords(str_replace('_', ' ', $role)));
-        
-        $roleSalaries = ['SalesAssistant' => 25000, 'SalesSupervisor' => 40000, 'DeliveryEmployee' => 30000, 'InventoryManager' => 40000, 'FinanceManager' => 50000, 'EmployeeManager' => 50000, 'CompanyManager' => 50000];
-        $salary = $roleSalaries[$formattedRole] ?? 45000;
-
-        try {
-            $this->pdo->beginTransaction();
-
-            $stmt = $this->pdo->prepare("INSERT INTO Employee (emp_name, username, password, emp_email, emp_phone_no, employee_role, emp_address, base_salary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $username, $password, $email, $phone, $formattedRole, $address, $salary]);
-            $id = $this->pdo->lastInsertId();
-
-            // Insert into role-specific subclass[cite: 2]
-            $stmtSub = $this->pdo->prepare("INSERT INTO $formattedRole (emp_id) VALUES (?)");
-            $stmtSub->execute([$id]);
-
-            $this->pdo->commit();
-            $this->handler->sendResponse(true, ['employee_id' => $id, 'basic_salary' => $salary], 'Employee created successfully');
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
-            $this->handler->sendResponse(false, null, 'Failed to create employee: ' . $e->getMessage());
-        }
+    if (empty($name) || empty($username) || empty($password) || empty($email) || empty($role)) {
+        return $this->handler->sendResponse(false, null, 'Missing required fields');
     }
+
+    $formattedRole = str_replace(' ', '', ucwords(str_replace('_', ' ', $role)));
+    
+    // If salary wasn't provided, use backend backup logic structures
+    if ($salary <= 0) {
+        $roleSalaries = [
+            'SalesAssistant' => 50000, 
+            'DeliveryEmployee' => 50000,
+            'InventoryManager' => 70000, 
+            'SalesSupervisor' => 70000, 
+            'FinanceManager' => 80000, 
+            'EmployeeManager' => 80000, 
+            'CompanyManager' => 100000
+        ];
+        $salary = $roleSalaries[$formattedRole] ?? 50000;
+    }
+
+    try {
+        $this->pdo->beginTransaction();
+        $stmt = $this->pdo->prepare("INSERT INTO Employee (emp_name, username, password, emp_email, emp_phone_no, employee_role, emp_address, base_salary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $username, $password, $email, $phone, $formattedRole, $address, $salary]);
+        $id = $this->pdo->lastInsertId();
+
+        $stmtSub = $this->pdo->prepare("INSERT INTO $formattedRole (emp_id) VALUES (?)");
+        $stmtSub->execute([$id]);
+        
+        $this->pdo->commit();
+        $this->handler->sendResponse(true, ['employee_id' => $id, 'basic_salary' => $salary], 'Employee created successfully');
+    } catch (Exception $e) {
+        $this->pdo->rollBack();
+        $this->handler->sendResponse(false, null, 'Failed to create employee: ' . $e->getMessage());
+    }
+}
 
 public function update() {
     $input = json_decode(file_get_contents('php://input'), true);

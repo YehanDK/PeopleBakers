@@ -79,13 +79,15 @@ async function renderAddNewEmployee() {
                 <div class="form-row">
                     <div class="form-group"><label>Phone <span style="color:var(--danger);">*</span></label><input id="newEmpPhone" placeholder="(+94) 70-0000-000" required /></div>
                     <div class="form-group"><label>Role <span style="color:var(--danger);">*</span></label>
-                        <select id="newEmpRole">
+                        <!-- Added onchange event mapping to assign baseline salary defaults dynamically -->
+                        <select id="newEmpRole" onchange="updateDefaultSalaryField(this.value)">
                             <option value="salesassistant">Sales Assistant</option>
                             <option value="deliveryemployee">Delivery Employee</option>
                             <option value="inventorymanager">Inventory Manager</option>
                             <option value="employeemanager">Employee Manager</option>
                             <option value="financemanager">Finance Manager</option>
                             <option value="salessupervisor">Sales Supervisor</option>
+                            <option value="companymanager">Company Manager</option>
                         </select>
                     </div>
                 </div>
@@ -93,7 +95,11 @@ async function renderAddNewEmployee() {
                     <div class="form-group"><label>Username <span style="color:var(--danger);">*</span></label><input id="newEmpUsername" placeholder="cooper" required /></div>
                     <div class="form-group"><label>Password <span style="color:var(--danger);">*</span></label><input type="password" id="newEmpPassword" placeholder="enter a password" required /></div>
                 </div>
-                <div class="form-group"><label>Address</label><input id="newEmpAddress" placeholder="123 Main St, NYC" /></div>
+                <div class="form-row">
+                    <!-- Added: Mandatory Editable Salary Field -->
+                    <div class="form-group"><label>Initial Basic Salary (LKR) <span style="color:var(--danger);">*</span></label><input type="number" id="newEmpSalary" min="0" step="0.01" placeholder="50000.00" value="50000.00" required /></div>
+                    <div class="form-group"><label>Address</label><input id="newEmpAddress" placeholder="123 Main St, NYC" /></div>
+                </div>
                 <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Add Employee</button>
             </form>
         </div>
@@ -108,15 +114,16 @@ async function handleAddEmployeeInline(e) {
     const role = document.getElementById('newEmpRole').value;
     const username = document.getElementById('newEmpUsername').value.trim();
     const password = document.getElementById('newEmpPassword').value.trim();
+    const salary = parseFloat(document.getElementById('newEmpSalary').value) || 0; // Grab client salary input
     const address = document.getElementById('newEmpAddress').value.trim();
 
-    if (!name || !email || !phone || !username || !password) {
-        alert('Please fill in all required fields.');
+    if (!name || !email || !phone || !username || !password || salary <= 0) {
+        alert('Please fill in all required fields and specify a valid salary.');
         return;
     }
 
     const response = await EmployeeAPI.create({
-        name, email, phone, role, username, password, address: address || 'N/A'
+        name, email, phone, role, username, password, salary, address: address || 'N/A'
     });
 
     if (response.success) {
@@ -302,5 +309,22 @@ async function rejectLeave(id) {
         renderTab('leave-mgmt');
     } else {
         alert(response.message || 'Failed to reject leave');
+    }
+}
+
+// Global baseline for salary based on employee type selected | this is for employee creation UI
+window.updateDefaultSalaryField = function(role) {
+    const baselineSalaries = {
+        'companymanager': 100000,
+        'financemanager': 80000,
+        'employeemanager': 80000,
+        'inventorymanager': 70000,
+        'salessupervisor': 70000,
+        'salesassistant': 50000,
+        'deliveryemployee': 50000
+    };
+    const salaryInput = document.getElementById('newEmpSalary');
+    if (salaryInput) {
+        salaryInput.value = baselineSalaries[role] || 50000;
     }
 }
