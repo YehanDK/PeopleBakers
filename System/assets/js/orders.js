@@ -237,8 +237,20 @@ function addInStoreCartItem() {
     return;
   }
 
+  // add stock validation for in store orders
+  if (qty > item.stock) {
+        alert(`Insufficient stock! Only ${item.stock} units available.`);
+        return;
+    }
+
   const existing = instoreCart.find(line => line.name === itemName);
   if (existing) {
+    // Validate against cart total
+        if (existing.qty + qty > item.stock) {
+            alert(`Cannot add more. Total stock for ${item.name} is ${item.stock}.`);
+            return;
+        }
+
     existing.qty += qty;
   } else {
     instoreCart.push({ name: item.name, qty, price: Number(item.price || 0) });
