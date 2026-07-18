@@ -200,6 +200,7 @@ function renderCustomCakeManagement() {
       <td><span class="badge ${badgeClass}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -240,7 +241,6 @@ function filterCustomCakes() {
       <td><span class="badge ${badgeClass}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
-        <button class="btn btn-sm btn-yellow" onclick="openEditCakeModal('${c.id}')"><i class="fas fa-edit"></i> Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>`;
