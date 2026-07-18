@@ -10,30 +10,29 @@ class LeaveAPI {
         $this->handler = $handler;
     }
     
-    public function list() {
-        $employee_id = $_GET['employee_id'] ?? $_POST['employee_id'] ?? null;
-        if ($employee_id === 'undefined' || $employee_id === 'null' || $employee_id === '') {
-            $employee_id = null;
-        }
-        
-        // Updated table names and aliased columns to match frontend expectations[cite: 2, 7]
-        $sql = "SELECT l.leave_request_id AS leave_id, l.emp_id AS employee_id, l.leave_type AS type, 
-                       l.leave_start AS from_date, l.leave_end AS to_date, l.purpose AS reason, 
-                       'Pending' AS status, e.emp_name AS employee_name 
-                FROM LeaveRequest l 
-                LEFT JOIN Employee e ON l.emp_id = e.emp_id";
-        
-        if ($employee_id) {
-            $sql .= " WHERE l.emp_id = ?";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([$employee_id]);
-        } else {
-            $stmt = $this->pdo->query($sql);
-        }
-        
-        $leaves = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $this->handler->sendResponse(true, $leaves);
+public function list() {
+    $employee_id = $_GET['employee_id'] ?? $_POST['employee_id'] ?? null;
+    if ($employee_id === 'undefined' || $employee_id === 'null' || $employee_id === '') {
+        $employee_id = null;
     }
+    
+    $sql = "SELECT l.leave_request_id AS leave_id, l.emp_id AS employee_id, l.leave_type AS type, 
+                   l.leave_start AS from_date, l.leave_end AS to_date, l.purpose AS reason, 
+                   l.leave_status AS status, e.emp_name AS employee_name
+            FROM LeaveRequest l 
+            LEFT JOIN Employee e ON l.emp_id = e.emp_id";
+              
+    if ($employee_id) {
+        $sql .= " WHERE l.emp_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$employee_id]);
+    } else {
+        $stmt = $this->pdo->query($sql);
+    }
+              
+    $leaves = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $this->handler->sendResponse(true, $leaves);
+}
     
     public function create() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;

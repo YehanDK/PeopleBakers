@@ -262,31 +262,68 @@ async function renderLeaveManagement() {
     const response = await LeaveAPI.list();
     const leaveRequests = response.success ? response.data : [];
     
-    let rows = leaveRequests.map(l => `
+    // 1. Separate requests by status flags
+    const pendingRequests = leaveRequests.filter(l => l.status === 'Pending');
+    const processedRequests = leaveRequests.filter(l => l.status === 'Approved' || l.status === 'Rejected');
+    
+    // 2. Build rows for Pending requests (includes action buttons)
+    let pendingRows = pendingRequests.map(l => `
         <tr>
             <td>${l.employee_name || l.employee_id}</td>
             <td>${l.from_date}</td>
             <td>${l.to_date}</td>
             <td>${l.type}</td>
             <td>${l.reason || 'N/A'}</td>
-            <td><span class="badge ${l.status === 'Approved' ? 'badge-green' : l.status === 'Rejected' ? 'badge-red' : 'badge-orange'}">${l.status}</span></td>
+            <td><span class="badge badge-orange">${l.status}</span></td>
             <td>
-                ${l.status === 'Pending' ? `
-                    <button class="btn btn-sm btn-success" onclick="approveLeave(${l.leave_id})"><i class="fas fa-check"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="rejectLeave(${l.leave_id})"><i class="fas fa-times"></i></button>
-                ` : ''}
+                <button class="btn btn-sm btn-success" onclick="approveLeave(${l.leave_id})"><i class="fas fa-check"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="rejectLeave(${l.leave_id})"><i class="fas fa-times"></i></button>
             </td>
         </tr>
     `).join('');
 
+    // 3. Build rows for Processed requests (read-only history log)
+    let processedRows = processedRequests.map(l => `
+        <tr>
+            <td>${l.employee_name || l.employee_id}</td>
+            <td>${l.from_date}</td>
+            <td>${l.to_date}</td>
+            <td>${l.type}</td>
+            <td>${l.reason || 'N/A'}</td>
+            <td><span class="badge ${l.status === 'Approved' ? 'badge-green' : 'badge-red'}">${l.status}</span></td>
+        </tr>
+    `).join('');
+
     return `
+        <!-- Section 1: Actionable Pending Requests Table -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:0.5rem;"></i> Leave Management</h3>
+                <h3><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:0.5rem;"></i> Active Leave Requests</h3>
+                <span class="badge badge-orange">${pendingRequests.length} Pending</span>
             </div>
             <table>
-                <tr><th>Employee</th><th>From</th><th>To</th><th>Type</th><th>Reason</th><th>Status</th><th>Actions</th></tr>
-                <tbody>${rows || '<tr><td colspan="7" class="text-muted text-center py-2">No leave requests found.</td></tr>'}</tbody>
+                <thead>
+                    <tr><th>Employee</th><th>From</th><th>To</th><th>Type</th><th>Reason</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    ${pendingRows || '<tr><td colspan="7" class="text-muted text-center py-2">No pending leave requests found.</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 2: Historical Log Table -->
+        <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-header">
+                <h3><i class="fas fa-history" style="color:var(--text-gray);margin-right:0.5rem;"></i> Leave History Log</h3>
+                <span class="badge badge-purple">${processedRequests.length} Processed</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Employee</th><th>From</th><th>To</th><th>Type</th><th>Reason</th><th>Resolution Status</th></tr>
+                </thead>
+                <tbody>
+                    ${processedRows || '<tr><td colspan="6" class="text-muted text-center py-2">No processed leave history found.</td></tr>'}
+                </tbody>
             </table>
         </div>
     `;
@@ -296,6 +333,7 @@ async function approveLeave(id) {
     const response = await LeaveAPI.updateStatus(id, 'Approved');
     if (response.success) {
         showToast('Leave request approved.');
+        await loadAppData(); // FIX: Sync data cache from DB before rendering
         renderTab('leave-mgmt');
     } else {
         alert(response.message || 'Failed to approve leave');
@@ -306,6 +344,7 @@ async function rejectLeave(id) {
     const response = await LeaveAPI.updateStatus(id, 'Rejected');
     if (response.success) {
         showToast('Leave request rejected.');
+        await loadAppData(); // FIX: Sync data cache from DB before rendering
         renderTab('leave-mgmt');
     } else {
         alert(response.message || 'Failed to reject leave');
