@@ -45,7 +45,7 @@ async function renderManageEmployee() {
         </div>
         <div class="card">
             <h3>Update Employee Details</h3>
-            <p class="text-muted">Select an employee to update their role, salary, address, or phone.</p>
+            <p class="text-muted">Select an employee to update their salary, address, or phone.</p>
             <div class="form-group"><label>Select Employee</label>
                 <select id="empSelect" onchange="loadEmployeeDetails()">
                     <option value="">Select an employee</option>
@@ -53,10 +53,15 @@ async function renderManageEmployee() {
                 </select>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Role</label><select id="updateRole"><option value="salesassistant">Sales Assistant</option><option value="deliveryemployee">Delivery Employee</option><option value="inventorymanager">Inventory Manager</option><option value="employeemanager">Employee Manager</option><option value="financemanager">Finance Manager</option><option value="salessupervisor">Sales Supervisor</option></select></div>
-                <div class="form-group"><label>Phone</label><input id="updatePhone" placeholder="(555) 000-0000" /></div>
+                <!-- Changed: Role dropdown replaced with a disabled, read-only text input field -->
+                <div class="form-group"><label>Role</label><input id="updateRole" disabled style="background:#f0ebf7; color:#555;" /></div>
+                <div class="form-group"><label>Phone</label><input id="updatePhone" placeholder="(+94) 70-000-0000" /></div>
             </div>
-            <div class="form-group"><label>Address</label><input id="updateAddress" placeholder="Address" /></div>
+            <div class="form-row">
+                <!-- Added: Salary field layout entry slot -->
+                <div class="form-group"><label>Basic Salary (LKR)</label><input type="number" id="updateSalary" min="0" step="0.01" placeholder="0.00" /></div>
+                <div class="form-group"><label>Address</label><input id="updateAddress" placeholder="Address" /></div>
+            </div>
             <button class="btn" onclick="updateEmployee()">Update Employee</button>
         </div>
     `;
@@ -68,11 +73,11 @@ async function renderAddNewEmployee() {
             <h3><i class="fas fa-user-plus" style="color:var(--primary);margin-right:0.5rem;"></i> Add New Employee</h3>
             <form id="addEmployeeInlineForm">
                 <div class="form-row">
-                    <div class="form-group"><label>Full Name <span style="color:var(--danger);">*</span></label><input id="newEmpName" placeholder="John Doe" required /></div>
-                    <div class="form-group"><label>Email <span style="color:var(--danger);">*</span></label><input type="email" id="newEmpEmail" placeholder="john@peoplesbakers.com" required /></div>
+                    <div class="form-group"><label>Full Name <span style="color:var(--danger);">*</span></label><input id="newEmpName" placeholder="Sheldon Cooper" required /></div>
+                    <div class="form-group"><label>Email <span style="color:var(--danger);">*</span></label><input type="email" id="newEmpEmail" placeholder="sheldon@peoplesbakers.com" required /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Phone <span style="color:var(--danger);">*</span></label><input id="newEmpPhone" placeholder="(555) 000-0000" required /></div>
+                    <div class="form-group"><label>Phone <span style="color:var(--danger);">*</span></label><input id="newEmpPhone" placeholder="(+94) 70-0000-000" required /></div>
                     <div class="form-group"><label>Role <span style="color:var(--danger);">*</span></label>
                         <select id="newEmpRole">
                             <option value="salesassistant">Sales Assistant</option>
@@ -85,8 +90,8 @@ async function renderAddNewEmployee() {
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Username <span style="color:var(--danger);">*</span></label><input id="newEmpUsername" placeholder="john.d" required /></div>
-                    <div class="form-group"><label>Password <span style="color:var(--danger);">*</span></label><input type="password" id="newEmpPassword" placeholder="Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢" required /></div>
+                    <div class="form-group"><label>Username <span style="color:var(--danger);">*</span></label><input id="newEmpUsername" placeholder="cooper" required /></div>
+                    <div class="form-group"><label>Password <span style="color:var(--danger);">*</span></label><input type="password" id="newEmpPassword" placeholder="enter a password" required /></div>
                 </div>
                 <div class="form-group"><label>Address</label><input id="newEmpAddress" placeholder="123 Main St, NYC" /></div>
                 <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Add Employee</button>
@@ -128,7 +133,10 @@ async function loadEmployeeDetails() {
     if (isNaN(index) || index < 0) return;
     selectedEmpIndex = index;
     const emp = employees[index];
-    document.getElementById('updateRole').value = emp.role || 'salesassistant';
+    
+    // Changed: Map properties into the new read-only field and numeric salary target field
+    document.getElementById('updateRole').value = emp.role || '';
+    document.getElementById('updateSalary').value = Number(emp.basic_salary || 0);
     document.getElementById('updateAddress').value = emp.address || '';
     document.getElementById('updatePhone').value = emp.phone || '';
 }
@@ -136,13 +144,15 @@ async function loadEmployeeDetails() {
 async function updateEmployee() {
     if (selectedEmpIndex < 0 || selectedEmpIndex >= employees.length) return;
     const emp = employees[selectedEmpIndex];
+    
     const data = {
         employee_id: emp.employee_id || emp.id,
-        role: document.getElementById('updateRole').value,
-        address: document.getElementById('updateAddress').value || emp.address,
         phone: document.getElementById('updatePhone').value || emp.phone,
+        basic_salary: parseFloat(document.getElementById('updateSalary').value) || 0,
+        address: document.getElementById('updateAddress').value || emp.address
+
     };
-    
+         
     const response = await EmployeeAPI.update(data);
     if (response.success) {
         showToast(`Employee ${emp.name} updated successfully!`);
