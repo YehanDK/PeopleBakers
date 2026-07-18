@@ -144,44 +144,10 @@ async function loadAppData() {
                     description: order.description || order.design_details || 'No description provided',
                     date: order.requested_date || order.order_date || '', // <--- Change this line to map requested_date
                     status: order.cake_status || order.status || 'Pending',
-                    fulfillmentStatus: order.status || 'Pending'
+                    price: order.total
                 }));
                 customCakeCounter = Math.max(1, customCakeRequests.length + 1);
                 inStoreOrderCounter = Math.max(1, inStoreOrders.length + 1);
-            }
-        }
-
-        // Load custom cake REQUESTS directly from custom_cake_orders.
-        // Pending requests live ONLY here until a supervisor approves them;
-        // approved/rejected ones stay here too (with order_id set once approved).
-        if (typeof CustomAPI !== 'undefined') {
-            try {
-                const cakeResp = await CustomAPI.list();
-                if (cakeResp.success) {
-                    const cakeRows = (cakeResp.data || []).map(c => ({
-                        id: c.custom_order_id,
-                        custom_order_id: c.custom_order_id,
-                        order_id: c.order_id,
-                        customer: c.customer_name || 'Guest Customer',
-                        customer_name: c.customer_name,
-                        customer_id: c.customer_id,
-                        phone: c.phone || 'N/A',
-                        design: c.design_details || c.description || 'Custom cake request',
-                        description: c.description || c.design_details || 'No description provided',
-                        price: (c.total_amount !== null && c.total_amount !== undefined) ? c.total_amount : '',
-                        date: c.pickup_date || c.created_at || '',
-                        pickup_date: c.pickup_date,
-                        status: c.status || 'PendingApproval',
-                        approved_by: c.approved_by,
-                        approved_at: c.approved_at,
-                        fulfillmentStatus: c.status === 'Approved' ? 'Pending' : c.status
-                    }));
-                    // Single source of truth: custom_cake_orders (keyed by custom_order_id)
-                    customCakeRequests = cakeRows;
-                    customCakeCounter = Math.max(1, cakeRows.length + 1);
-                }
-            } catch (e) {
-                console.error('Failed to load custom cake requests:', e);
             }
         }
     } catch (error) {
