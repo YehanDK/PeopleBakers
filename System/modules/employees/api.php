@@ -34,11 +34,17 @@ class EmployeesAPI {
     }
 
 public function list() {
+    // Uses a subquery to pull only the latest salary row per employee, ensuring exactly 1 row per unique individual
     $stmt = $this->pdo->query("
-        SELECT e.emp_id AS employee_id, e.emp_name AS name, e.username, e.emp_email AS email, e.emp_phone_no AS phone, e.employee_role AS role, e.emp_address AS address, e.base_salary AS basic_salary,
-               COALESCE(s.total, 0) as salary, s.created_date as payment_date
+        SELECT e.emp_id AS employee_id, e.emp_name AS name, e.username, e.emp_email AS email, 
+               e.emp_phone_no AS phone, e.employee_role AS role, e.emp_address AS address, 
+               e.base_salary AS basic_salary, COALESCE(s.total, 0) as salary, s.created_date as payment_date
         FROM Employee e
-        LEFT JOIN Salary s ON e.emp_id = s.emp_id
+        LEFT JOIN (
+            SELECT emp_id, total, created_date
+            FROM Salary
+            WHERE salary_id IN (SELECT MAX(salary_id) FROM Salary GROUP BY emp_id)
+        ) s ON e.emp_id = s.emp_id
     ");
     $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $this->handler->sendResponse(true, $employees);
@@ -103,36 +109,43 @@ public function list() {
         }
     }
 
-    public function update() {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $data = $input ?: $_POST;
-        $id = $data['employee_id'] ?? $_GET['id'] ?? 0;
-
-        if (!$id) return $this->handler->sendResponse(false, null, 'Employee ID required');
-
-        $fields = []; $params = [];
-        $mapping = ['name' => 'emp_name', 'email' => 'emp_email', 'phone' => 'emp_phone_no', 'address' => 'emp_address'];
-
-        foreach ($mapping as $frontendKey => $dbCol) {
-            if (isset($data[$frontendKey])) {
-                $fields[] = "$dbCol = ?";
-                $params[] = $data[$frontendKey];
-            }
+public function update() {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $data = $input ?: $_POST;
+    $id = $data['employee_id'] ?? $_GET['id'] ?? 0;
+    if (!$id) return $this->handler->sendResponse(false, null, 'Employee ID required');
+    
+    $fields = []; 
+    $params = [];
+    
+    // FIX: Added 'basic_salary' mapping to match the 'base_salary' database column description
+    $mapping = [
+        'name'         => 'emp_name', 
+        'email'        => 'emp_email', 
+        'phone'        => 'emp_phone_no', 
+        'address'      => 'emp_address',
+        'basic_salary' => 'base_salary'
+    ];
+    
+    foreach ($mapping as $frontendKey => $dbCol) {
+        if (isset($data[$frontendKey])) {
+            $fields[] = "$dbCol = ?";
+            $params[] = $data[$frontendKey];
         }
-
-        if (isset($data['password']) && !empty($data['password'])) {
-            $fields[] = "password = ?";
-            $params[] = $data['password'];
-        }
-
-        if (empty($fields)) return $this->handler->sendResponse(false, null, 'No fields to update');
-
-        $params[] = $id;
-        $stmt = $this->pdo->prepare("UPDATE Employee SET " . implode(', ', $fields) . " WHERE emp_id = ?");
-        $stmt->execute($params);
-
-        $this->handler->sendResponse(true, null, 'Employee updated successfully');
     }
+    
+    if (isset($data['password']) && !empty($data['password'])) {
+        $fields[] = "password = ?";
+        $params[] = $data['password'];
+    }
+    
+    if (empty($fields)) return $this->handler->sendResponse(false, null, 'No fields to update');
+    
+    $params[] = $id;
+    $stmt = $this->pdo->prepare("UPDATE Employee SET " . implode(', ', $fields) . " WHERE emp_id = ?");
+    $stmt->execute($params);
+    $this->handler->sendResponse(true, null, 'Employee updated successfully');
+}
 
     public function delete() {
         $input = json_decode(file_get_contents('php://input'), true);
