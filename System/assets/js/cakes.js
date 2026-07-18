@@ -442,8 +442,6 @@ function renderViewCustomCakeRequest() {
       <td>${c.date}</td>
       <td><span class="badge badge-orange">Pending</span></td>
       <td>
-        <button class="btn btn-sm btn-success" onclick="approveCustomCake('${c.id}')"><i class="fas fa-check"></i> Accept</button>
-        <button class="btn btn-sm btn-danger" onclick="rejectCustomCake('${c.id}')"><i class="fas fa-times"></i> Reject</button>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
       </td>
     </tr>
@@ -510,8 +508,6 @@ function filterViewCustomCakes() {
       <td>${c.date}</td>
       <td><span class="badge badge-orange">Pending</span></td>
       <td>
-        <button class="btn btn-sm btn-success" onclick="approveCustomCake('${c.id}')"><i class="fas fa-check"></i> Accept</button>
-        <button class="btn btn-sm btn-danger" onclick="rejectCustomCake('${c.id}')"><i class="fas fa-times"></i> Reject</button>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
       </td>
     </tr>
