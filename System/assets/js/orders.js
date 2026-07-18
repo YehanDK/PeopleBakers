@@ -387,13 +387,11 @@ function renderOnlineOrders() {
         </div>
         <div class="form-group">
           <label>New Status</label>
-          <select id="updateOnlineOrderStatus">
-            <option value="Pending">Pending</option>
-            <option value="Preparing">Preparing</option>
-            <option value="Ready for Pickup">Ready for Pickup</option>
-            <option value="Out for Delivery">Out for Delivery</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Cancelled">Cancelled</option>
+          <select id="updateOnlineOrderStatus" required>
+              <option value="Pending">Pending</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Preparing">Preparing</option>
+              <option value="Ready for Pickup">Ready for Pickup</option>
           </select>
         </div>
       </div>
@@ -441,37 +439,36 @@ async function updateOnlineOrderStatusFromSelect() {
 }
 
 async function updateOnlineOrderStatus(id) {
-  const order = onlineOrders.find(o => String(o.id) === String(id));
-  if (!order) return;
+    const order = onlineOrders.find(o => String(o.id) === String(id));
+    if (!order) return;
 
-  // Only advance through the statuses listed in the "New Status" combobox on this tab,
-  // so the action button stays consistent with the available options (e.g. Pending, Preparing).
-  const statusSelect = document.getElementById('updateOnlineOrderStatus');
-  const allowedStatuses = statusSelect
-    ? Array.from(statusSelect.options).map(opt => opt.value)
-    : ['Pending', 'Preparing'];
-
-  const currentIndex = allowedStatuses.indexOf(order.status);
-
-  // Order is already in a later stage than this tab can handle (e.g. handed to delivery).
-  if (currentIndex === -1) {
-    showToast(`Order ${id} is already at '${order.status}'. No further update available here.`);
-    return;
-  }
-
-  if (currentIndex < allowedStatuses.length - 1) {
-    const nextStatus = allowedStatuses[currentIndex + 1];
-    const response = await OrdersAPI.updateStatus(order.id, nextStatus);
-    if (!response.success) {
-      alert(response.message || 'Failed to update order status');
-      return;
+    // Sales Assistants cannot change status if the current status is already past "Ready for Pickup"
+    const restrictedStatuses = ['Out for Delivery', 'Delivered', 'Completed'];
+    if (restrictedStatuses.includes(order.status)) {
+        alert('This order has already been processed beyond the Sales Assistant control limit.');
+        return;
     }
-    await loadAppData();
-    showToast(`Order ${id} status updated to ${nextStatus}`);
-    renderTab('online-orders');
-  } else {
-    showToast(`Order ${id} is already at '${order.status}'.`);
-  }
+
+    // This excludes 'Cancelled' from the automatic "Update Status" button cycle.
+    const progressionPath = ['Pending', 'Preparing', 'Ready for Pickup'];
+    
+    const currentIndex = progressionPath.indexOf(order.status);
+    
+    // Only proceed if current status is in our progression list and not at the end
+    if (currentIndex !== -1 && currentIndex < progressionPath.length - 1) {
+        const nextStatus = progressionPath[currentIndex + 1];
+        const response = await OrdersAPI.updateStatus(order.id, nextStatus);
+        
+        if (!response.success) {
+            alert(response.message || 'Failed to update order status');
+            return;
+        }
+        await loadAppData();
+        showToast(`Order ${id} status updated to ${nextStatus}`);
+        renderTab('online-orders');
+    } else {
+        showToast(`Order ${id} is already at the "Ready for pickup" status`);
+    }
 }
 
 function viewOnlineOrderDetails(id) {
