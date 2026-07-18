@@ -200,6 +200,7 @@ function renderCustomCakeManagement() {
       <td><span class="badge ${badgeClass}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -283,14 +284,11 @@ async function approveCustomCake(id) {
   const priceInput = document.getElementById('viewCakePrice');
   let price = priceInput ? parseFloat(priceInput.value) : 0;
 
-  if (isNaN(price) || price <= 0) {
-    const promptedPrice = prompt("Enter the finalized contract pricing amount (LKR) for this custom cake order:");
-    if (promptedPrice === null) return; 
-    price = parseFloat(promptedPrice);
-    if (isNaN(price) || price <= 0) {
-        alert("Please provide a valid pricing configuration balance.");
-        return;
-    }
+  // Programmatic validation: Ensure a valid price is filled when accepting
+  if (!priceInput || isNaN(price) || price <= 0) {
+    alert("Please enter a valid pricing value amount (LKR) before accepting this order.");
+    if (priceInput) priceInput.focus(); // Highlights the input box for the supervisor
+    return; // Halts execution so the unpriced data is never sent to the backend module
   }
 
   const response = await CustomAPI.approve(id, null, price);
@@ -321,6 +319,18 @@ function closeViewCakeModal() {
   document.getElementById('viewCakeModal').classList.remove('active');
 }
 
+async function deleteCustomCake(id) {
+  if (!confirm(`Are you sure you want to permanently delete custom cake request #${id}?`)) return;
+  const response = await CustomAPI.delete(id);
+  if (!response.success) {
+    alert(response.message || 'Failed to delete custom cake request');
+    return;
+  }
+  await loadAppData();
+  showToast(`Custom cake #${id} deleted successfully.`);
+  renderTab(currentTab);
+}
+
 function renderViewCustomCakeRequest() {
   const pendingCakes = customCakeRequests.filter(c => c.status === 'Pending' || c.status === 'PendingApproval');
   const rejectedCakes = customCakeRequests.filter(c => c.status === 'Rejected');
@@ -347,6 +357,7 @@ function renderViewCustomCakeRequest() {
       <td><span class="badge badge-red">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>
   `).join('');
