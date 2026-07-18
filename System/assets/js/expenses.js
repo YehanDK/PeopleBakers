@@ -18,11 +18,11 @@ async function renderExpenseRecords() {
             <div class="form-row">
                 <div class="form-group">
                     <label>Bill Reference Number <span style="color: var(--danger);">*</span></label>
-                    <input type="text" id="expBillNum" placeholder="e.g. BL-99812" required />
+                    <input type="text" id="expBillNum"  required />
                 </div>
                 <div class="form-group">
                     <label>Amount (LKR) <span style="color: var(--danger);">*</span></label>
-                    <input type="number" id="expAmount" step="0.01" min="0.01" placeholder="0.00" required />
+                    <input type="number" id="expAmount" step="0.01" min="0.01"  required />
                 </div>
             </div>
             <div class="form-row">
@@ -32,7 +32,7 @@ async function renderExpenseRecords() {
                 </div>
                 <div class="form-group">
                     <label>Operational Description</label>
-                    <input type="text" id="expDesc" placeholder="e.g. Raw butter procurement logistics supply line" />
+                    <input type="text" id="expDesc"  />
                 </div>
             </div>
             <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Ledger Entry</button>
