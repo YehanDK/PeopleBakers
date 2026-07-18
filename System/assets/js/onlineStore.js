@@ -289,8 +289,8 @@ async function checkoutOnlineCart(totalSum) {
 function renderCustomerCakeRequest() {
   return `
     <div class="card">
-      <h3>Manual Custom Cake Request</h3>
-      <p class="text-muted">Submit a new custom cake request directly into our decoration workshop processing queue.</p>
+      <h3>Custom Cake Request</h3>
+      <p class="text-muted">Have a vision for the perfect cake? Tell us your ideas, and we’ll make them a reality.</p><br>
       
       <div class="form-group">
         <label>Customer Name</label>
