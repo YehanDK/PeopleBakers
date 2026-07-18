@@ -140,11 +140,7 @@ function renderReportUIContainer(selectedDuration = 'daily') {
   `;
 }
 
-/**
- * Compiles an isolated document with clean print typography and layouts.
- * Opens an independent context frame to keep the dashboard state intact.
- * @param {string} duration - 'daily' or 'monthly'
- */
+// printing the sales report 
 async function printDetailedSalesReport(duration) {
   const now = new Date();
   const data = getFilteredSalesSummaryData(duration);
