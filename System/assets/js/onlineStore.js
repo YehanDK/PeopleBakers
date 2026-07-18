@@ -294,19 +294,19 @@ function renderCustomerCakeRequest() {
       
       <div class="form-group">
         <label>Customer Name</label>
-        <input id="manualCustomer" value="${currentUser.name}" disabled style="background:#f0ebf7; color:#555;" />
+        <input id="manualCustomer" value="${currentUser.name}" disabled style="background:#f0ebf7; color:#555;" required/>
       </div>
       <div class="form-group">
         <label>Phone Number</label>
-        <input id="manualPhone" value="${currentUser.phone || ''}" placeholder="(555) 000-0000" />
+        <input id="manualPhone" value="${currentUser.phone || ''}" placeholder="(555) 000-0000" required/>
       </div>
       <div class="form-group">
         <label>Cake Design</label>
-        <input id="manualDesign" placeholder="e.g. 2-tier floral anniversary cake" />
+        <input id="manualDesign" placeholder="e.g. 2-tier floral anniversary cake" required/>
       </div>
       <div class="form-group">
         <label>Description</label>
-        <textarea id="manualDescription" placeholder="Describe the cake design requirements, custom layers, thematic colors, icing details, etc." rows="4"></textarea>
+        <textarea id="manualDescription" placeholder="Describe the cake design requirements, custom layers, thematic colors, icing details, etc." rows="4" required></textarea>
       </div>
       <div class="form-group">
         <label>Required Pickup Date <span style="color:var(--danger);">*</span></label>
