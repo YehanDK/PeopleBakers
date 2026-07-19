@@ -258,7 +258,7 @@ function filterCustomCakes() {
 function viewCustomCake(id) {
   const cake = customCakeRequests.find(c => String(c.id) === String(id));
   if (!cake) return;
-  const isPending = cake.status === 'PendingApproval';
+  const isPending = cake.status === 'Pending';
   const content = document.getElementById('viewCakeContent');
   content.innerHTML = `
     <div class="form-group"><label>Order ID</label><input value="${cake.id}" disabled /></div>
@@ -398,10 +398,12 @@ function renderViewCustomCakeRequest() {
 
 function filterViewCustomCakes() {
   const search = document.getElementById('viewCakeSearch').value.toLowerCase();
-  const pendingCakes = pendingRequests.filter(c =>
-    String(c.id).toLowerCase().includes(search) ||
-    c.customer.toLowerCase().includes(search) ||
-    c.design.toLowerCase().includes(search)
+  const pendingCakes = customCakeRequests.filter(c => 
+      c.status === 'Pending' && (
+      String(c.id).toLowerCase().includes(search) ||
+      c.customer.toLowerCase().includes(search) ||
+      c.design.toLowerCase().includes(search)
+    )
   );
   const tbody = document.getElementById('viewCakeBody');
   tbody.innerHTML = pendingCakes.map(c => `

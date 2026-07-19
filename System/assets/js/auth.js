@@ -169,7 +169,7 @@ async function loadAppData() {
                 const cakeResp = await CustomAPI.list();
                 if (cakeResp.success) {
                     const cakeRows = (cakeResp.data || []).map(c => ({
-                        id: c.custom_order_id,
+                        id: c.order_id,
                         custom_order_id: c.custom_order_id,
                         order_id: c.order_id,
                         customer: c.customer_name || 'Guest Customer',
@@ -178,10 +178,10 @@ async function loadAppData() {
                         phone: c.phone || 'N/A',
                         design: c.design_details || c.description || 'Custom cake request',
                         description: c.description || c.design_details || 'No description provided',
-                        price: (c.total_amount !== null && c.total_amount !== undefined) ? c.total_amount : '',
-                        date: c.pickup_date || c.created_at || '',
+                        price: (c.total !== null && c.total !== undefined) ? c.total : '',
+                        date: c.requested_date || c.order_date || '',
                         pickup_date: c.pickup_date,
-                        status: c.status || 'PendingApproval',
+                        status: c.status || 'Pending',
                         approved_by: c.approved_by,
                         approved_at: c.approved_at,
                         fulfillmentStatus: c.status === 'Approved' ? 'Pending' : c.status

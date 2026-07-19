@@ -221,16 +221,16 @@ async function checkoutOnlineCart(totalSum) {
         <div id="cardDetailsFormFields">
           <div class="form-group">
             <label><i class="far fa-credit-card"></i> Card Number</label>
-            <input type="text" id="cartCardNum"  maxlength="19" required />
+            <input type="text" id="cartCardNum"  placeholder="card number" maxlength="19" required />
           </div>
           <div class="form-row" style="display:flex; gap:1rem;">
             <div class="form-group" style="flex:1;">
               <label>Expiry Date</label>
-              <input type="text" id="cartCardExpiry"  maxlength="5" required />
+              <input type="text" id="cartCardExpiry"  maxlength="5" placeholder="MM/YY" required />
             </div>
             <div class="form-group" style="flex:1;">
               <label>CVC Security Code</label>
-              <input type="password" id="cartCardCVC"  maxlength="3" required />
+              <input type="password" id="cartCardCVC"  placeholder="123" maxlength="3" required />
             </div>
           </div>
         </div>
