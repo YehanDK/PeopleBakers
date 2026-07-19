@@ -500,13 +500,18 @@ function viewDeliveryDetails(id) {
 
 // ----- Delivery Management with Search -----
 function renderDeliveryManagement() {
-  let rows = onlineOrders.map(o => `
+
+  // allowing only "ready for pickup" - "delivered" orders
+  const allowedStatuses = ['Ready for Pickup', 'Out for Delivery', 'Delivered'];
+  const filteredDeliveryOrders = onlineOrders.filter(o => allowedStatuses.includes(o.status));
+
+  let rows = filteredDeliveryOrders.map(o => `
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
       <td>${o.customer_phone || o.phone || 'N/A'}</td>
       <td>${o.address || 'N/A'}</td>
-      <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
+      <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : 'badge-orange'}">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
         <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -519,14 +524,14 @@ function renderDeliveryManagement() {
       <div class="card-header">
         <h3><i class="fas fa-truck-fast" style="color:var(--primary);margin-right:0.5rem;"></i> Delivery Management</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <input class="search-box"  id="deliverySearch" oninput="filterDeliveryOrders()" />
+          <input class="search-box" placeholder="Search deliveries..." id="deliverySearch" oninput="filterDeliveryOrders()" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Select Order</label>
           <select id="deliveryOrderSelect">
-            ${onlineOrders.map(o => `<option value="${o.id}">${o.id} - ${o.customer}</option>`).join('')}
+            ${filteredDeliveryOrders.map(o => `<option value="${o.id}">${o.id} - ${o.customer}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -548,11 +553,17 @@ function renderDeliveryManagement() {
 
 function filterDeliveryOrders() {
   const search = document.getElementById('deliverySearch').value.toLowerCase();
+  const allowedStatuses = ['Ready for Pickup', 'Out for Delivery', 'Delivered'];
+
+  // Apply both the status restriction and search text constraint
   const filtered = onlineOrders.filter(o =>
-    String(o.id).toLowerCase().includes(search) ||
-    o.customer.toLowerCase().includes(search) ||
-    String(o.address || '').toLowerCase().includes(search)
+    allowedStatuses.includes(o.status) && (
+      String(o.id).toLowerCase().includes(search) ||
+      o.customer.toLowerCase().includes(search) ||
+      String(o.address || '').toLowerCase().includes(search)
+    )
   );
+
   const tbody = document.getElementById('deliveryBody');
   tbody.innerHTML = filtered.map(o => `
     <tr>
@@ -560,7 +571,7 @@ function filterDeliveryOrders() {
       <td>${o.customer}</td>
       <td>${o.customer_phone || o.phone || 'N/A'}</td>
       <td>${o.address || 'N/A'}</td>
-      <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
+      <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : 'badge-orange'}">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
         <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
