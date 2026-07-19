@@ -254,26 +254,65 @@ async function checkoutOnlineCart(totalSum) {
   document.getElementById('checkoutPaymentForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    // Extract values and strip any whitespace formatting
+    const cardNum = document.getElementById('cartCardNum').value.replace(/\s+/g, '');
+    const expiry = document.getElementById('cartCardExpiry').value.trim();
+    const cvc = document.getElementById('cartCardCVC').value.trim();
+
+    // 1. Card Number Validation (Must be exactly 16 digits)
+    if (!/^\d{16}$/.test(cardNum)) {
+      alert('Please enter a valid 16-digit card number.');
+      return;
+    }
+
+    // 2. Expiry Date Validation (Format must match MM/YY)
+    if (!/^\d{2}\/\d{2}$/.test(expiry)) {
+      alert('Please enter expiration date in MM/YY format.');
+      return;
+    }
+
+    const [month, year] = expiry.split('/').map(Number);
+    if (month < 1 || month > 12) {
+      alert('Invalid expiry month. Must be between 01 and 12.');
+      return;
+    }
+
+    // Check against real-time 2026 system date thresholds
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = Number(now.getFullYear().toString().slice(-2)); // Extracts '26'
+
+    if (year < currentYear || (year === currentYear && month < currentMonth)) {
+      alert('The card has expired. Please use a valid card.');
+      return;
+    }
+
+    // 3. CVC Security Code Validation (Must be exactly 3 digits)
+    if (!/^\d{3}$/.test(cvc)) {
+      alert('Please enter a valid 3-digit CVC code.');
+      return;
+    }
+
+    // Proceeding to API transmission if all conditions clear
     try {
       const response = await OrdersAPI.create({
         customer_id: currentUser.customer_id,
         customer_name: currentUser.name,
         order_type: 'Online',
         total_amount: Number(totalSum),
-        payment_method: 'Card', // Strictly forces Card payload mapping explicitly
+        payment_method: 'Card', 
         items: onlineCart.map(item => ({
           product_id: item.product_id,
           quantity: item.quantity,
           price: Number(item.price)
         }))
       });
-
       if (response.success) {
         showToast('Card payment authorized successfully! Your order has been placed.');
-        onlineCart = []; 
-        destroyModal(); 
-        await loadAppData(); 
-        renderTab('online-store'); 
+        onlineCart = [];
+        destroyModal();
+        await loadAppData();
+        renderTab('online-store');
       } else {
         alert(response.message || 'Payment processing failed.');
       }
