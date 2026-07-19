@@ -28,9 +28,9 @@ function renderMyProfile() {
 function renderChangePassword() {
   return `
     <div class="card"><h3>Change Password</h3>
-      <div class="form-group"><label>Current Password</label><input type="password" id="currentPasswordInput" placeholder="••••••••" /></div>
-      <div class="form-group"><label>New Password</label><input type="password" id="newPasswordInput" placeholder="••••••••" /></div>
-      <div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPasswordInput" placeholder="••••••••" /></div>
+      <div class="form-group"><label>Current Password</label><input type="password" id="currentPasswordInput"  /></div>
+      <div class="form-group"><label>New Password</label><input type="password" id="newPasswordInput"  /></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPasswordInput"  /></div>
       <button class="btn" onclick="handleChangePassword()">Update Password</button>
     </div>
   `;
@@ -76,7 +76,7 @@ function renderLeaveRequest() {
       <div class="form-group"><label>Leave Type</label>
         <select id="leaveType"><option>Vacation</option><option>Sick</option><option>Personal</option></select>
       </div>
-      <div class="form-group"><label>Reason</label><input id="leaveReason" placeholder="Reason for leave" /></div>
+      <div class="form-group"><label>Reason</label><input id="leaveReason"  /></div>
       <button class="btn" onclick="submitLeaveRequest()">Submit Request</button>
     </div>
   `;

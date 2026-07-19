@@ -18,7 +18,7 @@ async function renderOnlineStore() {
       <div class="card-header">
         <h3><i class="fas fa-shop" style="color:var(--primary);margin-right:0.5rem;"></i> Peoples Bakers Storefront</h3>
         <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; width:100%; max-width:600px;">
-            <input type="text" class="search-box" style="max-width:100%; flex:2;" placeholder="Search delicious treats..." id="storeSearchInput" oninput="filterOnlineStore()" />
+            <input type="text" class="search-box" style="max-width:100%; flex:2;"  id="storeSearchInput" oninput="filterOnlineStore()" />
             <select id="storeCategoryFilter" class="form-group" style="margin-bottom:0; flex:1; border-radius:40px; padding:0.5rem 1rem; border:1.5px solid var(--border-light);" onchange="filterOnlineStore()">
             <option value="all">All Categories</option>
             ${filterOptions}
@@ -221,16 +221,16 @@ async function checkoutOnlineCart(totalSum) {
         <div id="cardDetailsFormFields">
           <div class="form-group">
             <label><i class="far fa-credit-card"></i> Card Number</label>
-            <input type="text" id="cartCardNum" placeholder="4111 2222 3333 4444" maxlength="19" required />
+            <input type="text" id="cartCardNum"  maxlength="19" required />
           </div>
           <div class="form-row" style="display:flex; gap:1rem;">
             <div class="form-group" style="flex:1;">
               <label>Expiry Date</label>
-              <input type="text" id="cartCardExpiry" placeholder="MM/YY" maxlength="5" required />
+              <input type="text" id="cartCardExpiry"  maxlength="5" required />
             </div>
             <div class="form-group" style="flex:1;">
               <label>CVC Security Code</label>
-              <input type="password" id="cartCardCVC" placeholder="123" maxlength="3" required />
+              <input type="password" id="cartCardCVC"  maxlength="3" required />
             </div>
           </div>
         </div>
@@ -333,19 +333,19 @@ function renderCustomerCakeRequest() {
       
       <div class="form-group">
         <label>Customer Name</label>
-        <input id="manualCustomer" value="${currentUser.name}" disabled style="background:#f0ebf7; color:#555;" required/>
+        <input id="manualCustomer" value="${currentUser.name}" disabled style="background:#f0ebf7; color:#555;" />
       </div>
       <div class="form-group">
         <label>Phone Number</label>
-        <input id="manualPhone" value="${currentUser.phone || ''}" placeholder="(555) 000-0000" required/>
+        <input id="manualPhone" value="${currentUser.phone || ''}"  />
       </div>
       <div class="form-group">
         <label>Cake Design</label>
-        <input id="manualDesign" placeholder="e.g. 2-tier floral anniversary cake" required/>
+        <input id="manualDesign"  />
       </div>
       <div class="form-group">
         <label>Description</label>
-        <textarea id="manualDescription" placeholder="Describe the cake design requirements, custom layers, thematic colors, icing details, etc." rows="4" required></textarea>
+        <textarea id="manualDescription"  rows="4"></textarea>
       </div>
       <div class="form-group">
         <label>Required Pickup Date <span style="color:var(--danger);">*</span></label>
@@ -531,18 +531,18 @@ function renderCustomerProfileTab() {
           </div>
           <div class="form-group">
             <label>Contact Phone Line</label>
-            <input type="text" id="profPhone" value="${currentUser.phone || ''}" placeholder="e.g. 0771234567" />
+            <input type="text" id="profPhone" value="${currentUser.phone || ''}"  />
           </div>
         </div>
         
         <div class="form-group">
           <label>Primary Fulfillment Delivery Address</label>
-          <textarea id="profAddress" style="border-radius:12px; resize:vertical;" rows="3" placeholder="Enter your delivery neighborhood/street">${currentUser.address || ''}</textarea>
+          <textarea id="profAddress" style="border-radius:12px; resize:vertical;" rows="3" >${currentUser.address || ''}</textarea>
         </div>
 
         <div class="form-group" style="border-top: 1px dashed var(--border-light); padding-top: 1rem; margin-top: 1.5rem;">
           <label><i class="fas fa-key"></i> New Password (Leave completely blank to keep existing password)</label>
-          <input type="password" id="profPassword" placeholder="••••••••" autocomplete="new-password" />
+          <input type="password" id="profPassword"  autocomplete="new-password" />
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">

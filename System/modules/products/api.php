@@ -23,6 +23,9 @@ switch ($action) {
     case 'categories':
         listCategories();
         break;
+    case 'createCategory':
+        createCategory();
+        break;
     default:
         sendResponse(false, null, 'Invalid action');
 }
@@ -90,6 +93,32 @@ function deleteProduct() {
         sendResponse(true, null, 'Product deleted');
     } else {
         sendResponse(false, null, 'Failed to delete product');
+    }
+}
+
+function createCategory() {
+    global $pdo;
+    $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $name = trim($data['category_name'] ?? '');
+
+    if ($name === '') {
+        sendResponse(false, null, 'Category name is required');
+    }
+
+    // Prevent duplicate category names
+    $check = $pdo->prepare("SELECT category_id FROM ProductCategory WHERE category_name = ?");
+    $check->execute([$name]);
+    if ($check->fetch()) {
+        sendResponse(false, null, 'Category already exists');
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO ProductCategory (category_name) VALUES (?)");
+    $result = $stmt->execute([$name]);
+
+    if ($result) {
+        sendResponse(true, ['id' => $pdo->lastInsertId(), 'category_name' => $name], 'Category created');
+    } else {
+        sendResponse(false, null, 'Failed to create category');
     }
 }
 

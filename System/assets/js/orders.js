@@ -60,7 +60,7 @@ function renderInStoreOrders() {
       <div class="form-row" style="gap:1rem;flex-wrap:wrap;align-items:flex-end;">
         <div class="form-group" style="flex:1;min-width:220px;">
           <label>Customer Name</label>
-          <input type="text" id="instoreCustomer" placeholder="Customer Name" oninput="updateTempCustomerName(this.value)"/>
+          <input type="text" id="instoreCustomer"  oninput="updateTempCustomerName(this.value)"/>
         </div>
         <div class="form-group" style="flex:1;min-width:220px;">
           <label>Item</label>
@@ -89,7 +89,7 @@ function renderInStoreOrders() {
       <div class="card-header">
         <h3><i class="fas fa-list" style="color:var(--primary);margin-right:0.5rem;"></i> In-Store Orders</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <input class="search-box" placeholder="Search orders..." id="inStoreSearch" oninput="filterInStoreOrders()" />
+          <input class="search-box"  id="inStoreSearch" oninput="filterInStoreOrders()" />
         </div>
       </div>
       <table>
@@ -366,7 +366,7 @@ function renderOnlineOrders() {
       <div class="card-header">
         <h3><i class="fas fa-truck" style="color:var(--primary);margin-right:0.5rem;"></i> Online Orders</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <input class="search-box" placeholder="Search orders..." id="onlineOrderSearch" oninput="filterOnlineOrders()" />
+          <input class="search-box"  id="onlineOrderSearch" oninput="filterOnlineOrders()" />
         </div>
       </div>
       <table>
@@ -482,6 +482,20 @@ function viewOnlineOrderDetails(id) {
   document.getElementById('orderDetailsModal').classList.add('active');
 }
 
+// Open the Delivery Details modal for a delivery-management order
+function viewDeliveryDetails(id) {
+  const order = onlineOrders.find(o => String(o.id) === String(id));
+  if (!order) return;
+  document.getElementById('deliveryDetailId').value = order.id;
+  document.getElementById('deliveryDetailCustomer').value = order.customer;
+  document.getElementById('deliveryDetailPhone').value = order.phone || order.customer_phone || 'N/A';
+  document.getElementById('deliveryDetailStatus').value = order.status;
+  document.getElementById('deliveryDetailAddress').value = order.address || 'N/A';
+  document.getElementById('deliveryDetailItems').value = (order.items || []).map(i => `${i.qty}x ${i.name} (LKR ${Number(i.price || 0).toFixed(2)})`).join('\n');
+  document.getElementById('deliveryDetailTotal').value = `LKR ${Number(order.total || 0).toFixed(2)}`;
+  document.getElementById('deliveryDetailsModal').classList.add('active');
+}
+
 // ... rest of online order functions ...
 
 // ----- Delivery Management with Search -----
@@ -494,6 +508,7 @@ function renderDeliveryManagement() {
       <td>${o.address || 'N/A'}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
       <td>
+        <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
         <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
       </td>
     </tr>
@@ -504,7 +519,7 @@ function renderDeliveryManagement() {
       <div class="card-header">
         <h3><i class="fas fa-truck-fast" style="color:var(--primary);margin-right:0.5rem;"></i> Delivery Management</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <input class="search-box" placeholder="Search deliveries..." id="deliverySearch" oninput="filterDeliveryOrders()" />
+          <input class="search-box"  id="deliverySearch" oninput="filterDeliveryOrders()" />
         </div>
       </div>
       <div class="form-row">
@@ -547,6 +562,7 @@ function filterDeliveryOrders() {
       <td>${o.address || 'N/A'}</td>
       <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Out for Delivery' ? 'badge-orange' : 'badge-orange'}">${o.status}</span></td>
       <td>
+        <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
         <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
       </td>
     </tr>

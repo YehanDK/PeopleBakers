@@ -384,9 +384,9 @@ async function renderCalculateSalary() {
           ${employees.map(e => `<option value="${e.id}">${e.id} - ${e.name}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>Basic Salary (LKR)</label><input id="baseSalary" placeholder="0.00" value="0.00" readonly /></div>
-      <div class="form-group"><label>Additions / Bonus (LKR)</label><input id="bonusAmount" placeholder="0.00" value="0.00" /></div>
-      <div class="form-group"><label>Deductions (LKR)</label><input id="deductionAmount" placeholder="0.00" value="0.00" /></div>
+      <div class="form-group"><label>Basic Salary (LKR)</label><input id="baseSalary"  value="0.00" readonly /></div>
+      <div class="form-group"><label>Additions / Bonus (LKR)</label><input id="bonusAmount"  value="0.00" /></div>
+      <div class="form-group"><label>Deductions (LKR)</label><input id="deductionAmount"  value="0.00" /></div>
       <button class="btn" onclick="calculateSalary()">Calculate Salary</button>
       <div id="salaryResult" class="mt-2 order-summary" style="display:none;">
         <strong>Net Salary: <span id="netSalary"></span></strong>

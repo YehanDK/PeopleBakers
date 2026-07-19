@@ -119,15 +119,18 @@ const SalaryAPI = {
     delete: (id) => API.call('salary', 'delete', 'POST', { id }),
 };
 
-// Custom Cake Order workflow configuration mapping
+// Custom Cake Order workflow (sales assistant requests -> supervisor approves -> order created)
 const CustomAPI = {
+    create: (data) => API.call('custom', 'create', 'POST', data),
     list: () => API.call('orders', 'list', 'GET', { type: 'custom' }),
     
-    // Configured to pass the price attribute to the updated backend logic
-    approve: (custom_order_id, approved_by, price) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Approved', price: price }),
+    // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Approved'
+    approve: (custom_order_id, approved_by, price) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Approved' }),
     
+    // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Rejected'
     reject: (custom_order_id) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Rejected' }),
     
+    // Reuses the existing 'delete' endpoint
     delete: (custom_order_id) => API.call('orders', 'delete', 'POST', { id: custom_order_id })
 };
 

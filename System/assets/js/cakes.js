@@ -1,7 +1,9 @@
 // ============================================================
-//  CUSTOM CAKE MANAGEMENT ( Cleaned & Synchronized Workflow )
+//  CUSTOM CAKE MANAGEMENT
 // ============================================================
 
+// Fulfillment lifecycle the sales assistant drives on APPROVED custom cakes.
+// (Approval itself is a separate axis tracked on custom_cake_orders.status.)
 const CAKE_FULFILLMENT_STATUSES = ['Preparing', 'Ready for Pickup', 'Completed'];
 
 // Cleaned: Removed unsafe role matching boundaries to ensure consistent active order views
@@ -42,7 +44,7 @@ function renderCustomCakeOrders() {
       <div class="card-header">
         <h3><i class="fas fa-cake-candles" style="color:var(--primary);margin-right:0.5rem;"></i> Approved Custom Cakes</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-          <input class="search-box" placeholder="Search by customer or design..." id="cakeOrderSearch" oninput="filterCustomCakeOrders()" />
+          <input class="search-box"  id="cakeOrderSearch" oninput="filterCustomCakeOrders()" />
         </div>
       </div>
       <table>
@@ -97,10 +99,12 @@ function filterCustomCakeOrders() {
     </tr>
   `).join('');
 
+  // Update the select dropdown in the update form to reflect filtered results
   const select = document.getElementById('updateCustomCakeSelect');
   select.innerHTML = filtered.map(c => `<option value="${c.id}">${c.id} - ${c.customer}</option>`).join('');
 }
 
+// ----- Sales Assistant: advance an approved cake through its fulfillment stages -----
 async function updateCustomCakeStatus(id) {
   const order = getVisibleCakeRequests().find(c => String(c.id) === String(id));
   if (!order) return;
@@ -143,10 +147,10 @@ function renderManualRequest() {
   return `
     <div class="card"><h3>Manual Custom Cake Request</h3>
       <p class="text-muted">Submit a new custom cake request</p>
-      <div class="form-group"><label>Customer Name</label><input id="manualCustomer" placeholder="Customer name" required/></div>
-      <div class="form-group"><label>Phone Number</label><input id="manualPhone" placeholder="(555) 000-0000" required/></div>
-      <div class="form-group"><label>Cake Design</label><input id="manualDesign" placeholder="e.g. 2-tier floral" required/></div>
-      <div class="form-group"><label>Description</label><textarea id="manualDescription" placeholder="Describe the cake design, colors, theme, etc." rows="4" required></textarea></div>
+      <div class="form-group"><label>Customer Name</label><input id="manualCustomer"  /></div>
+      <div class="form-group"><label>Phone Number</label><input id="manualPhone"  /></div>
+      <div class="form-group"><label>Cake Design</label><input id="manualDesign"  /></div>
+      <div class="form-group"><label>Description</label><textarea id="manualDescription"  rows="4"></textarea></div>
       <div class="form-group"><label>Required Date <span style="color:var(--danger);">*</span></label><input type="date" id="manualDate" required /></div>
       <button class="btn" onclick="submitManualRequest()">Submit Request</button>
     </div>
@@ -187,6 +191,7 @@ async function submitManualRequest() {
   renderTab(currentUser && currentUser.role === 'salessupervisor' ? 'view-cake' : 'custom-cake');
 }
 
+// ----- Sales Supervisor: Cake Management (Approved only) -----
 function renderCustomCakeManagement() {
   const visibleCakes = getVisibleCakeRequests();
 
@@ -212,7 +217,7 @@ function renderCustomCakeManagement() {
       <div class="card-header">
         <h3><i class="fas fa-cake-candles" style="color:var(--primary);margin-right:0.5rem;"></i> Custom Cake Requests</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <input class="search-box" placeholder="Search cakes..." id="cakeSearch" oninput="filterCustomCakes()" />
+          <input class="search-box"  id="cakeSearch" oninput="filterCustomCakes()" />
         </div>
       </div>
       <table>
@@ -253,7 +258,7 @@ function filterCustomCakes() {
 function viewCustomCake(id) {
   const cake = customCakeRequests.find(c => String(c.id) === String(id));
   if (!cake) return;
-  const isPending = cake.status === 'Pending' || cake.status === 'PendingApproval';
+  const isPending = cake.status === 'PendingApproval';
   const content = document.getElementById('viewCakeContent');
   content.innerHTML = `
     <div class="form-group"><label>Order ID</label><input value="${cake.id}" disabled /></div>
@@ -267,13 +272,11 @@ function viewCustomCake(id) {
       <div class="form-group"><label>Status</label><input value="${cake.status}" disabled /></div>
       <div class="form-group"><label>Date</label><input value="${cake.date}" disabled /></div>
     </div>
-    <div class="form-group">
-      <label>Price (LKR)</label>
-      <input id="viewCakePrice" type="number" min="0" step="0.01" placeholder="0.00" value="${cake.price || ''}" ${isPending ? '' : 'disabled'} />
-    </div>
+    <div class="form-group"><label>Price (LKR)</label><input id="viewCakePrice" type="number" min="0" step="0.01"  value="${cake.price || ''}" ${isPending ? '' : 'disabled'} /></div>
+    <div class="form-group"><label>Fulfillment</label><input value="${cake.fulfillmentStatus || 'Pending'}" disabled /></div>
     <div class="btn-group">
       ${isPending ? `
-        <button class="btn btn-success" onclick="approveCustomCake('${cake.id}')"><i class="fas fa-check"></i> Accept</button>
+        <button class="btn btn-success" onclick="approveCustomCake('${cake.id}')"><i class="fas fa-check"></i> Approve</button>
         <button class="btn btn-danger" onclick="rejectCustomCake('${cake.id}')"><i class="fas fa-times"></i> Reject</button>
       ` : ''}
       <button class="btn btn-outline" onclick="closeViewCakeModal()">Close</button>
@@ -283,6 +286,7 @@ function viewCustomCake(id) {
 }
 
 async function approveCustomCake(id) {
+  const returnTab = currentTab;
   const priceInput = document.getElementById('viewCakePrice');
   let price = priceInput ? parseFloat(priceInput.value) : 0;
 
@@ -295,17 +299,17 @@ async function approveCustomCake(id) {
 
   const response = await CustomAPI.approve(id, null, price);
   if (!response.success) {
-    alert(response.message || 'Failed to authorize order selection parameters.');
+    alert(response.message || 'Failed to approve custom cake request');
     return;
   }
   await loadAppData();
-  showToast(`Custom cake order #${id} has been accepted and pricing set to LKR ${price.toFixed(2)}.`);
+  showToast(`Custom cake ${id} approved — order total set to ${price}.`);
   closeViewCakeModal();
-  renderTab(currentTab);
+  renderTab(returnTab);
 }
 
 async function rejectCustomCake(id) {
-  if (!confirm(`Are you sure you want to reject custom cake order #${id}?`)) return;
+  const returnTab = currentTab;
   const response = await CustomAPI.reject(id);
   if (!response.success) {
     alert(response.message || 'Failed to reject custom cake request');
@@ -314,7 +318,7 @@ async function rejectCustomCake(id) {
   await loadAppData();
   showToast(`Custom cake ${id} rejected.`);
   closeViewCakeModal();
-  renderTab(currentTab);
+  renderTab(returnTab);
 }
 
 function closeViewCakeModal() {
@@ -334,7 +338,7 @@ async function deleteCustomCake(id) {
 }
 
 function renderViewCustomCakeRequest() {
-  const pendingCakes = customCakeRequests.filter(c => c.status === 'Pending' || c.status === 'PendingApproval');
+  const pendingCakes = customCakeRequests.filter(c => c.status === 'Pending');
   const rejectedCakes = customCakeRequests.filter(c => c.status === 'Rejected');
 
   let pendingRows = pendingCakes.map(c => `
@@ -343,7 +347,7 @@ function renderViewCustomCakeRequest() {
       <td>${c.customer}</td>
       <td>${c.design}</td>
       <td>${c.date}</td>
-      <td><span class="badge badge-orange">Pending</span></td>
+      <td><span class="badge badge-orange">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
       </td>
@@ -369,7 +373,7 @@ function renderViewCustomCakeRequest() {
       <div class="card-header">
         <h3><i class="fas fa-clock" style="color:var(--orange);margin-right:0.5rem;"></i> Pending Cake Requests</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <input class="search-box" placeholder="Search pending requests..." id="viewCakeSearch" oninput="filterViewCustomCakes()" />
+          <input class="search-box"  id="viewCakeSearch" oninput="filterViewCustomCakes()" />
           <span class="badge badge-orange">${pendingCakes.length} Pending</span>
         </div>
       </div>
@@ -394,14 +398,11 @@ function renderViewCustomCakeRequest() {
 
 function filterViewCustomCakes() {
   const search = document.getElementById('viewCakeSearch').value.toLowerCase();
-  
-  const pendingCakes = customCakeRequests.filter(c => 
-    (c.status === 'Pending' || c.status === 'PendingApproval') &&
-    (String(c.id).toLowerCase().includes(search) ||
-     c.customer.toLowerCase().includes(search) ||
-     c.design.toLowerCase().includes(search))
+  const pendingCakes = pendingRequests.filter(c =>
+    String(c.id).toLowerCase().includes(search) ||
+    c.customer.toLowerCase().includes(search) ||
+    c.design.toLowerCase().includes(search)
   );
-
   const tbody = document.getElementById('viewCakeBody');
   tbody.innerHTML = pendingCakes.map(c => `
     <tr>
@@ -409,7 +410,7 @@ function filterViewCustomCakes() {
       <td>${c.customer}</td>
       <td>${c.design}</td>
       <td>${c.date}</td>
-      <td><span class="badge badge-orange">Pending</span></td>
+      <td><span class="badge badge-orange">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
       </td>

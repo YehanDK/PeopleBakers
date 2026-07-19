@@ -35,7 +35,7 @@ async function renderManageEmployee() {
             <div class="card-header">
                 <h3><i class="fas fa-user-gear" style="color:var(--primary);margin-right:0.5rem;"></i> Manage Employees</h3>
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-                    <input class="search-box" placeholder="Search employees..." id="manageEmpSearch" oninput="filterManageEmployees()" />
+                    <input class="search-box"  id="manageEmpSearch" oninput="filterManageEmployees()" />
                 </div>
             </div>
             <table>
@@ -230,7 +230,7 @@ async function renderViewEmployees() {
         <div class="card">
             <div class="card-header">
                 <h3><i class="fas fa-users" style="color:var(--primary);margin-right:0.5rem;"></i> Employee List</h3>
-                <input class="search-box" placeholder="Search employees..." id="viewEmpSearch" oninput="filterViewEmployees()" />
+                <input class="search-box"  id="viewEmpSearch" oninput="filterViewEmployees()" />
             </div>
             <table>
                 <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Email</th></tr>
