@@ -58,7 +58,7 @@ function filterInventoryItems() {
     return `<tr>
       <td><strong>${item.name}</strong></td>
       <td>${stock}</td>
-      <td>$${Number(item.price || 0).toFixed(2)}</td>
+      <td>LKR ${Number(item.price || 0).toFixed(2)}</td>
       <td><span class="badge ${statusClass}">${statusText}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewItem(${origIndex})"><i class="fas fa-eye"></i></button>
@@ -256,11 +256,11 @@ function viewItem(index) {
           </div>
           <div class="detail-row">
             <span class="label">Price</span>
-            <span class="value">$${Number(item.price || 0).toFixed(2)}</span>
+            <span class="value">LKR ${Number(item.price || 0).toFixed(2)}</span>
           </div>
           <div class="detail-row">
             <span class="label">Total Value</span>
-            <span class="value">$${(stock * Number(item.price || 0)).toFixed(2)}</span>
+            <span class="value">LKR ${(stock * Number(item.price || 0)).toFixed(2)}</span>
           </div>
           <div class="detail-row">
             <span class="label">Status</span>

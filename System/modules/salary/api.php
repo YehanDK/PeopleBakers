@@ -17,10 +17,11 @@ class SalaryAPI {
         }
         
         // REMOVED: 'Paid' AS status column
+        // Corrected Join Condition
         $sql = "SELECT s.salary_id, s.emp_id AS employee_id, s.base_salary, s.bonus, s.total AS amount, 
-                       s.created_date AS payment_date, s.month, e.emp_name as employee_name 
-                FROM Salary s
-                LEFT JOIN Employee e ON s.emp_id = s.emp_id";
+                s.created_date AS payment_date, s.month, e.emp_name as employee_name 
+         FROM Salary s
+         LEFT JOIN Employee e ON s.emp_id = e.emp_id"; // <-- Fixed to e.emp_id
 
         if ($employee_id) {
             $sql .= " WHERE s.emp_id = ?";
