@@ -136,7 +136,7 @@ function generateOnlineCartHTML() {
     
     <div style="border-top:1px solid var(--border-light); padding-top:1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center;">
       <span style="font-weight:600; color:var(--text-gray); font-size:0.9rem;">Estimated Total:</span>
-      <span style="font-size:1.4rem; font-weight:700; color:var(--primary-dark);">$${totalSum.toFixed(2)}</span>
+      <span style="font-size:1.4rem; font-weight:700; color:var(--primary-dark);">LKR ${totalSum.toFixed(2)}</span>
     </div>
     
     <button class="btn btn-success" style="width:100%; justify-content:center; padding:0.75rem;" onclick="checkoutOnlineCart(${totalSum})">
@@ -343,7 +343,7 @@ async function submitCustomerCakeRequest() {
   });
 
   if (!response.success) {
-    alert(response.message || 'Custom request delivery payload rejected.');
+    alert(response.message || 'Custom request rejected.');
     return;
   }
 
@@ -387,7 +387,7 @@ async function renderCustomerOrderHistory() {
         <td><span class="employee-id">#ON-00${o.id}</span></td>
         <td>${o.date ? new Date(o.date).toLocaleDateString() : 'N/A'}</td>
         <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemSummary}">${itemSummary}</td>
-        <td><strong>$${o.total.toFixed(2)}</strong></td>
+        <td><strong>LKR ${o.total.toFixed(2)}</strong></td>
         <td><span class="badge ${getStatusBadge(o.status)}">${o.status}</span></td>
         <td>
           <button class="btn btn-sm btn-info" onclick="viewOnlineOrderDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
@@ -421,14 +421,14 @@ async function renderCustomerOrderHistory() {
     <div class="card">
       <div class="card-header">
         <h3><i class="fas fa-shopping-bag" style="color:var(--primary); margin-right:0.5rem;"></i> My Online Purchases</h3>
-        <span class="badge badge-purple">${myOnlineOrders.length} Orders Total</span>
+        <span class="badge badge-purple">${myOnlineOrders.length} Orders</span>
       </div>
       <table>
         <thead>
           <tr>
             <th>Order Ref</th>
             <th>Purchase Date</th>
-            <th>Purchased Treats</th>
+            <th>Purchased Items</th>
             <th>Total Amount</th>
             <th>Delivery Status</th>
           </tr>
@@ -442,16 +442,16 @@ async function renderCustomerOrderHistory() {
     <!-- Custom Bakery Workshop Decoration Requests Card -->
     <div class="card" style="margin-top: 2rem;">
       <div class="card-header">
-        <h3><i class="fas fa-birthday-cake" style="color:var(--orange); margin-right:0.5rem;"></i> My Custom Cake Workshop Requests</h3>
-        <span class="badge badge-purple">${myCakeRequests.length} Designs Logged</span>
+        <h3><i class="fas fa-birthday-cake" style="color:var(--orange); margin-right:0.5rem;"></i> My Custom Cake Requests</h3>
+        <span class="badge badge-purple">${myCakeRequests.length} Requests</span>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Request Ref</th>
+            <th>Order ID</th>
             <th>Submission Date</th>
             <th>Cake Design Summary</th>
-            <th>Thematic Description Details</th>
+            <th>Description Details</th>
             <th>Price</th>
             <th>Approval Status</th>
           </tr>
@@ -471,7 +471,7 @@ function renderCustomerProfileTab() {
   return `
     <div class="card" style="max-width: 700px; margin: 0 auto;">
       <h3><i class="fas fa-user-edit" style="color:var(--primary); margin-right:0.5rem;"></i> Edit My Profile Details</h3>
-      <p class="text-muted">Modify your authenticated delivery routing parameters and credentials below.</p>
+      <p class="text-muted">Modify your account details below.</p><br>
       
       <form id="customerProfileUpdateForm" onsubmit="saveCustomerProfileChanges(event)">
         <div class="form-row">
