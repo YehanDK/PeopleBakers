@@ -41,8 +41,9 @@ class InventoryAPI {
         $price = $data['price'] ?? 0;
         $stock = $data['stock_qty'] ?? 0;
         $cat_id = $data['category_id'] ?? null;
-        
+
         if (empty($name) || empty($price)) return $this->handler->sendResponse(false, null, 'Name and price are required');
+        if (empty($cat_id)) return $this->handler->sendResponse(false, null, 'Product category is required');
         
         $stmt = $this->pdo->prepare("INSERT INTO Product (product_name, price, quantity, category_id) VALUES (?, ?, ?, ?)");
         $result = $stmt->execute([$name, $price, $stock, $cat_id]);
@@ -79,7 +80,8 @@ class InventoryAPI {
     }
 
     public function delete() {
-        $id = $_GET['id'] ?? $_POST['id'] ?? 0;
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $id = $data['id'] ?? $_GET['id'] ?? $_POST['id'] ?? 0;
         if (!$id) return $this->handler->sendResponse(false, null, 'Product ID required');
         
         try {

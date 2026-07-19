@@ -30,13 +30,47 @@ async function renderInventoryManagement() {
       <div class="card-header">
         <h3><i class="fas fa-boxes-stacked" style="color:var(--primary);margin-right:0.5rem;"></i> Inventory Items</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-          <input class="search-box" placeholder="Search items..." id="inventorySearch" oninput="filterInventoryItems()" />
+          <input class="search-box"  id="inventorySearch" oninput="filterInventoryItems()" />
           <button class="btn btn-success" onclick="openAddItemModal()"><i class="fas fa-plus"></i> Add New Item</button>
         </div>
       </div>
       <table>
         <tr><th>Item Name</th><th>Quantity</th><th>Price</th><th>Status</th><th>Actions</th></tr>
         <tbody id="inventoryBody">${rows || '<tr><td colspan="5" class="text-muted text-center py-2">No items in inventory.</td></tr>'}</tbody>
+      </table>
+    </div>
+    ${renderCategoryList()}
+  `;
+}
+
+// Renders the existing product categories below the inventory items
+function renderCategoryList() {
+  if (!Array.isArray(productCategories)) productCategories = [];
+
+  const itemCountByCat = {};
+  inventoryItems.forEach(item => {
+    const key = item.category_id || item.category || 'General';
+    itemCountByCat[key] = (itemCountByCat[key] || 0) + 1;
+  });
+
+  const rows = productCategories.map((cat, index) => {
+    const count = itemCountByCat[cat.category_id] || 0;
+    return `<tr>
+      <td><span class="employee-id">#CAT-00${cat.category_id}</span></td>
+      <td><strong>${cat.category_name}</strong></td>
+      <td><span class="badge badge-purple">${count} item(s)</span></td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="card" style="margin-top: 2rem;">
+      <div class="card-header">
+        <h3><i class="fas fa-tags" style="color:var(--primary);margin-right:0.5rem;"></i> Product Categories</h3>
+        <button class="btn btn-success" onclick="openAddCategoryModal()"><i class="fas fa-plus"></i> Add New Category</button>
+      </div>
+      <table>
+        <tr><th>Category ID</th><th>Category Name</th><th>Items</th></tr>
+        <tbody id="categoryBody">${rows || '<tr><td colspan="3" class="text-muted text-center py-2">No categories found.</td></tr>'}</tbody>
       </table>
     </div>
   `;
@@ -58,7 +92,7 @@ function filterInventoryItems() {
     return `<tr>
       <td><strong>${item.name}</strong></td>
       <td>${stock}</td>
-      <td>$${Number(item.price || 0).toFixed(2)}</td>
+      <td>LKR ${Number(item.price || 0).toFixed(2)}</td>
       <td><span class="badge ${statusClass}">${statusText}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewItem(${origIndex})"><i class="fas fa-eye"></i></button>
@@ -256,11 +290,11 @@ function viewItem(index) {
           </div>
           <div class="detail-row">
             <span class="label">Price</span>
-            <span class="value">$${Number(item.price || 0).toFixed(2)}</span>
+            <span class="value">LKR ${Number(item.price || 0).toFixed(2)}</span>
           </div>
           <div class="detail-row">
             <span class="label">Total Value</span>
-            <span class="value">$${(stock * Number(item.price || 0)).toFixed(2)}</span>
+            <span class="value">LKR ${(stock * Number(item.price || 0)).toFixed(2)}</span>
           </div>
           <div class="detail-row">
             <span class="label">Status</span>
@@ -328,6 +362,70 @@ async function openAddItemModal() {
   document.getElementById('addItemModal').classList.add('active');
 }
 
+// Create a new product category via the Products API
+async function createCategoryAPI(name) {
+  const response = await fetch('modules/products/api.php?action=createCategory', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ category_name: name })
+  });
+  return await response.json();
+}
+
+// Open the Add Category modal
+async function openAddCategoryModal() {
+  const form = document.getElementById('addCategoryForm');
+  if (form) form.reset();
+  const err = document.getElementById('addCategoryError');
+  if (err) { err.textContent = ''; err.style.display = 'none'; }
+  document.getElementById('addCategoryModal').classList.add('active');
+  setTimeout(() => {
+    const input = document.getElementById('newCategoryName');
+    if (input) input.focus();
+  }, 50);
+}
+
+// Close the Add Category modal
+function closeAddCategoryModal() {
+  document.getElementById('addCategoryModal').classList.remove('active');
+}
+
+// Submit handler for the Add Category form
+async function handleAddCategory(e) {
+  e.preventDefault();
+  const name = document.getElementById('newCategoryName').value.trim();
+  const err = document.getElementById('addCategoryError');
+  if (err) { err.textContent = ''; err.style.display = 'none'; }
+
+  if (!name) {
+    if (err) { err.textContent = 'Please enter a category name'; err.style.display = 'block'; }
+    return;
+  }
+
+  const response = await createCategoryAPI(name);
+  if (response.success) {
+    // Refresh the category dropdown in the Add Item modal and select the new one
+    const categories = await getCategories();
+    productCategories = categories;
+    const select = document.getElementById('newItemCategory');
+    if (select) {
+      select.innerHTML = '<option value="">None</option>';
+      categories.forEach(category => {
+        const opt = document.createElement('option');
+        opt.value = category.category_id;
+        opt.textContent = category.category_name;
+        if (String(category.category_id) === String(response.data?.id)) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+    closeAddCategoryModal();
+    renderTab('inventory');
+    showToast(`Category "${name}" added.`);
+  } else {
+    if (err) { err.textContent = response.message || 'Failed to add category'; err.style.display = 'block'; }
+  }
+}
+
 
 function closeAddItemModal() {
   document.getElementById('addItemModal').classList.remove('active');
@@ -338,16 +436,20 @@ async function handleAddItem(e) {
   const name = document.getElementById('newItemName').value.trim();
   const price = parseFloat(document.getElementById('newItemPrice').value);
   const stock = parseInt(document.getElementById('newItemStock').value);
+  const category_id = document.getElementById("newItemCategory").value || null;
 
   if (!name || isNaN(price) || isNaN(stock)) {
     alert('Please fill in all required fields.');
+    return;
+  }
+  if (!category_id) {
+    alert('Please select a product category.');
     return;
   }
   if (inventoryItems.some(i => (i.name || '').toLowerCase() === name.toLowerCase())) {
     alert('Item already exists. Use the Adjust function to modify it.');
     return;
   }
-  const category_id = document.getElementById("newItemCategory").value || null;
   const response = await InventoryAPI.create({ name, price, stock_qty: stock, category_id });
   if (response.success) {
     await loadAppData();
@@ -435,7 +537,7 @@ function renderRestockManagement() {
       <div class="card-header">
         <h3><i class="fas fa-arrows-rotate" style="color:var(--primary);margin-right:0.5rem;"></i> Restock Records</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-          <input class="search-box" placeholder="Search restocks..." id="restockSearch" oninput="filterRestockRecords()" />
+          <input class="search-box"  id="restockSearch" oninput="filterRestockRecords()" />
           <button class="btn btn-success" onclick="openRestockModal()"><i class="fas fa-plus"></i> Record Restock</button>
         </div>
       </div>

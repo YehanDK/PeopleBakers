@@ -57,7 +57,7 @@ const ROLE_CONFIG = {
     menu: [
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
       { id: 'inventory', icon: 'fa-boxes-stacked', label: 'Inventory' },
-      { id: 'restock', icon: 'fa-arrows-rotate', label: 'Restock' },
+      { id: 'restock', icon: 'fa-arrows-rotate', label: 'Stock Record' },
       { id: 'notifications', icon: 'fa-bell', label: 'Notifications' },
     ],
     renderMap: {
