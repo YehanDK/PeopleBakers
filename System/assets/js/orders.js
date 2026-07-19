@@ -47,6 +47,7 @@ function renderInStoreOrders() {
       <td>${o.date}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewInStoreOrderDetails('${o.id}')"><i class="fas fa-eye"></i> View Order</button>
+        <button class="btn btn-sm btn-outline" onclick="printInStoreReceipt('${o.id}')" style="margin-left: 0.25rem;"><i class="fas fa-print"></i> Print Receipt</button>
       </td>
     </tr>
   `).join('');
@@ -99,6 +100,129 @@ function renderInStoreOrders() {
   `;
 }
 
+// print recipt for in store orders
+function printInStoreReceipt(orderId) {
+  const order = inStoreOrders.find(o => String(o.id) === String(orderId));
+  if (!order) {
+    alert("Order data could not be located in application storage references.");
+    return;
+  }
+
+  const now = new Date();
+  const printWindow = window.open('', '_blank');
+
+  // Build the item rows safely parsing pricing limits
+  const itemRowsHtml = order.items.map(item => `
+    <tr>
+      <td style="padding: 10px 0; border-bottom: 1px dashed #e4dfed; color: #2d2d3f; font-weight: 500;">${item.name}</td>
+      <td style="padding: 10px 0; border-bottom: 1px dashed #e4dfed; color: #5a5a72; text-align: center;">${item.qty}</td>
+      <td style="padding: 10px 0; border-bottom: 1px dashed #e4dfed; color: #1e1e2a; text-align: right; font-weight: 600;">LKR ${item.price.toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  printWindow.document.write(`
+  <html>
+  <head>
+      <title>Peoples Bakers - Receipt #${order.id}</title>
+      <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+          
+          /* UPDATED: Body set to full height and flex-column to stretch content */
+          body { 
+              min-height: 100vh; 
+              display: flex; 
+              flex-direction: column; 
+              padding: 40px; 
+              color: #1e1e2a; 
+              background: #fff; 
+          }
+
+          /* Content wrapper to allow the footer to push to bottom */
+          .receipt-content { flex: 1; }
+          
+          .receipt-header { text-align: center; border-bottom: 2px solid #6b3fa0; padding-bottom: 15px; margin-bottom: 20px; }
+          .receipt-header h1 { font-size: 28px; color: #4f2e7a; font-weight: 700; letter-spacing: -0.5px; }
+          .receipt-header p { font-size: 13px; color: #5a5a72; font-weight: 600; text-transform: uppercase; margin-top: 4px; letter-spacing: 1px; }
+          
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th { text-align: left; padding: 8px 0; border-bottom: 2px solid #e4dfed; color: #5a5a72; font-size: 12px; text-transform: uppercase; font-weight: 700; }
+          
+          .total-block { border-top: 2px solid #4f2e7a; padding-top: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+          .total-block span { font-size: 14px; font-weight: 700; color: #5a5a72; }
+          .total-block strong { font-size: 22px; font-weight: 700; color: #4f2e7a; }
+          
+          .metadata-section { font-size: 13px; line-height: 1.6; color: #2d2d3f; border-top: 1px solid #e4dfed; padding-top: 15px; }
+          .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+          .meta-label { font-weight: 600; color: #5a5a72; }
+          .meta-value { font-weight: 500; color: #1e1e2a; }
+          
+          .thank-you { text-align: center; margin-top: 30px; font-size: 12px; color: #8c7aa8; font-weight: 500; }
+          
+          @media print {
+              body { padding: 20px; height: 100vh; }
+              @page { size: auto; margin: 0; }
+          }
+      </style>
+  </head>
+  <body>
+      <div class="receipt-content">
+          <div class="receipt-header">
+              <h1>Peoples Bakers</h1>
+              <p>In Store Order</p>
+          </div>
+
+          <table>
+              <thead>
+                  <tr>
+                      <th>Product Name</th>
+                      <th style="text-align: center;">QTY</th>
+                      <th style="text-align: right;">Total</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  ${itemRowsHtml}
+              </tbody>
+          </table>
+
+          <div class="total-block">
+              <span>NET AMOUNT</span>
+              <strong>LKR ${order.total.toFixed(2)}</strong>
+          </div>
+
+          <div class="metadata-section">
+              <div class="meta-row">
+                  <span class="meta-label">Customer Name:</span>
+                  <span class="meta-value">${order.customer}</span>
+              </div>
+              <div class="meta-row">
+                  <span class="meta-label">Order Date:</span>
+                  <span class="meta-value">${order.date}</span>
+              </div>
+              <div class="meta-row">
+                  <span class="meta-label">Printed Date:</span>
+                  <span class="meta-value">${now.toLocaleDateString()} @ ${now.toLocaleTimeString()}</span>
+              </div>
+              <div class="meta-row" style="margin-top: 10px; font-size: 15px;">
+                  <span class="meta-label" style="color: #4f2e7a; font-weight: 700;">ORDER ID:</span>
+                  <span class="meta-value" style="color: #4f2e7a; font-weight: 700;">#ORD-${order.id}</span>
+              </div>
+          </div>
+      </div>
+
+      <p class="thank-you">Thank you for your business! Come back again.</p>
+  </body>
+  </html>
+`);
+
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 250);
+}
+
 function addInStoreCartItem() {
   const itemName = document.getElementById('instoreItemSelect').value;
   const qty = parseInt(document.getElementById('instoreItemQty').value, 10);
@@ -113,8 +237,20 @@ function addInStoreCartItem() {
     return;
   }
 
+  // add stock validation for in store orders
+  if (qty > item.stock) {
+        alert(`Insufficient stock! Only ${item.stock} units available.`);
+        return;
+    }
+
   const existing = instoreCart.find(line => line.name === itemName);
   if (existing) {
+    // Validate against cart total
+        if (existing.qty + qty > item.stock) {
+            alert(`Cannot add more. Total stock for ${item.name} is ${item.stock}.`);
+            return;
+        }
+
     existing.qty += qty;
   } else {
     instoreCart.push({ name: item.name, qty, price: Number(item.price || 0) });
@@ -175,6 +311,7 @@ function filterInStoreOrders() {
       <td>${o.date}</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewInStoreOrderDetails('${o.id}')"><i class="fas fa-eye"></i> View Order</button>
+        <button class="btn btn-sm btn-outline" onclick="printInStoreReceipt('${o.id}')" style="margin-left: 0.25rem;"><i class="fas fa-print"></i> Print Receipt</button>
       </td>
     </tr>
   `).join('');
@@ -250,13 +387,11 @@ function renderOnlineOrders() {
         </div>
         <div class="form-group">
           <label>New Status</label>
-          <select id="updateOnlineOrderStatus">
-            <option value="Pending">Pending</option>
-            <option value="Preparing">Preparing</option>
-            <option value="Ready for Pickup">Ready for Pickup</option>
-            <option value="Out for Delivery">Out for Delivery</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Cancelled">Cancelled</option>
+          <select id="updateOnlineOrderStatus" required>
+              <option value="Pending">Pending</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Preparing">Preparing</option>
+              <option value="Ready for Pickup">Ready for Pickup</option>
           </select>
         </div>
       </div>
@@ -304,37 +439,36 @@ async function updateOnlineOrderStatusFromSelect() {
 }
 
 async function updateOnlineOrderStatus(id) {
-  const order = onlineOrders.find(o => String(o.id) === String(id));
-  if (!order) return;
+    const order = onlineOrders.find(o => String(o.id) === String(id));
+    if (!order) return;
 
-  // Only advance through the statuses listed in the "New Status" combobox on this tab,
-  // so the action button stays consistent with the available options (e.g. Pending, Preparing).
-  const statusSelect = document.getElementById('updateOnlineOrderStatus');
-  const allowedStatuses = statusSelect
-    ? Array.from(statusSelect.options).map(opt => opt.value)
-    : ['Pending', 'Preparing'];
-
-  const currentIndex = allowedStatuses.indexOf(order.status);
-
-  // Order is already in a later stage than this tab can handle (e.g. handed to delivery).
-  if (currentIndex === -1) {
-    showToast(`Order ${id} is already at '${order.status}'. No further update available here.`);
-    return;
-  }
-
-  if (currentIndex < allowedStatuses.length - 1) {
-    const nextStatus = allowedStatuses[currentIndex + 1];
-    const response = await OrdersAPI.updateStatus(order.id, nextStatus);
-    if (!response.success) {
-      alert(response.message || 'Failed to update order status');
-      return;
+    // Sales Assistants cannot change status if the current status is already past "Ready for Pickup"
+    const restrictedStatuses = ['Out for Delivery', 'Delivered', 'Completed'];
+    if (restrictedStatuses.includes(order.status)) {
+        alert('This order has already been processed beyond the Sales Assistant control limit.');
+        return;
     }
-    await loadAppData();
-    showToast(`Order ${id} status updated to ${nextStatus}`);
-    renderTab('online-orders');
-  } else {
-    showToast(`Order ${id} is already at '${order.status}'.`);
-  }
+
+    // This excludes 'Cancelled' from the automatic "Update Status" button cycle.
+    const progressionPath = ['Pending', 'Preparing', 'Ready for Pickup'];
+    
+    const currentIndex = progressionPath.indexOf(order.status);
+    
+    // Only proceed if current status is in our progression list and not at the end
+    if (currentIndex !== -1 && currentIndex < progressionPath.length - 1) {
+        const nextStatus = progressionPath[currentIndex + 1];
+        const response = await OrdersAPI.updateStatus(order.id, nextStatus);
+        
+        if (!response.success) {
+            alert(response.message || 'Failed to update order status');
+            return;
+        }
+        await loadAppData();
+        showToast(`Order ${id} status updated to ${nextStatus}`);
+        renderTab('online-orders');
+    } else {
+        showToast(`Order ${id} is already at the "Ready for pickup" status`);
+    }
 }
 
 function viewOnlineOrderDetails(id) {

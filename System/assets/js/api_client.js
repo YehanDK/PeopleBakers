@@ -140,3 +140,9 @@ const ExpensesAPI = {
     create: (data) => API.call('expenses', 'create', 'POST', data),
     delete: (id) => API.call('expenses', 'delete', 'POST', { id })
 };
+
+
+// sales reports api
+const ReportsAPI = {
+    create: (data) => API.call('reports', 'save_report', 'POST', data)
+};

@@ -254,26 +254,65 @@ async function checkoutOnlineCart(totalSum) {
   document.getElementById('checkoutPaymentForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    // Extract values and strip any whitespace formatting
+    const cardNum = document.getElementById('cartCardNum').value.replace(/\s+/g, '');
+    const expiry = document.getElementById('cartCardExpiry').value.trim();
+    const cvc = document.getElementById('cartCardCVC').value.trim();
+
+    // 1. Card Number Validation (Must be exactly 16 digits)
+    if (!/^\d{16}$/.test(cardNum)) {
+      alert('Please enter a valid 16-digit card number.');
+      return;
+    }
+
+    // 2. Expiry Date Validation (Format must match MM/YY)
+    if (!/^\d{2}\/\d{2}$/.test(expiry)) {
+      alert('Please enter expiration date in MM/YY format.');
+      return;
+    }
+
+    const [month, year] = expiry.split('/').map(Number);
+    if (month < 1 || month > 12) {
+      alert('Invalid expiry month. Must be between 01 and 12.');
+      return;
+    }
+
+    // Check against real-time 2026 system date thresholds
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = Number(now.getFullYear().toString().slice(-2)); // Extracts '26'
+
+    if (year < currentYear || (year === currentYear && month < currentMonth)) {
+      alert('The card has expired. Please use a valid card.');
+      return;
+    }
+
+    // 3. CVC Security Code Validation (Must be exactly 3 digits)
+    if (!/^\d{3}$/.test(cvc)) {
+      alert('Please enter a valid 3-digit CVC code.');
+      return;
+    }
+
+    // Proceeding to API transmission if all conditions clear
     try {
       const response = await OrdersAPI.create({
         customer_id: currentUser.customer_id,
         customer_name: currentUser.name,
         order_type: 'Online',
         total_amount: Number(totalSum),
-        payment_method: 'Card', // Strictly forces Card payload mapping explicitly
+        payment_method: 'Card', 
         items: onlineCart.map(item => ({
           product_id: item.product_id,
           quantity: item.quantity,
           price: Number(item.price)
         }))
       });
-
       if (response.success) {
         showToast('Card payment authorized successfully! Your order has been placed.');
-        onlineCart = []; 
-        destroyModal(); 
-        await loadAppData(); 
-        renderTab('online-store'); 
+        onlineCart = [];
+        destroyModal();
+        await loadAppData();
+        renderTab('online-store');
       } else {
         alert(response.message || 'Payment processing failed.');
       }
@@ -289,8 +328,8 @@ async function checkoutOnlineCart(totalSum) {
 function renderCustomerCakeRequest() {
   return `
     <div class="card">
-      <h3>Manual Custom Cake Request</h3>
-      <p class="text-muted">Submit a new custom cake request directly into our decoration workshop processing queue.</p>
+      <h3>Custom Cake Request</h3>
+      <p class="text-muted">Have a vision for the perfect cake? Tell us your ideas, and we’ll make them a reality.</p><br>
       
       <div class="form-group">
         <label>Customer Name</label>
@@ -343,7 +382,7 @@ async function submitCustomerCakeRequest() {
   });
 
   if (!response.success) {
-    alert(response.message || 'Custom request delivery payload rejected.');
+    alert(response.message || 'Custom request rejected.');
     return;
   }
 
@@ -381,7 +420,7 @@ async function renderCustomerOrderHistory() {
 
   // Compile individual table rows for standard storefront orders[cite: 5]
   let storeRows = myOnlineOrders.map(o => {
-    const itemSummary = o.items.map(i => `${i.qty}x ${i.name}`).join(', ') || 'Product asset unlinked';
+  const itemSummary = o.items.map(i => `${i.qty}x ${i.name}`).join(', ') || 'Product asset unlinked'; //
     return `
       <tr>
         <td><span class="employee-id">#ON-00${o.id}</span></td>
@@ -389,19 +428,28 @@ async function renderCustomerOrderHistory() {
         <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemSummary}">${itemSummary}</td>
         <td><strong>LKR ${o.total.toFixed(2)}</strong></td>
         <td><span class="badge ${getStatusBadge(o.status)}">${o.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-info" onclick="viewOnlineOrderDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
+        </td>
       </tr>
     `;
   }).join('');
 
   // Compile individual table rows for custom cake workshop designs[cite: 5]
+  // Compile individual table rows for custom bakery workshop designs
   let cakeRows = myCakeRequests.map(c => {
+    const displayPrice = c.price && Number(c.price) > 0 ? `LKR ${Number(c.price).toFixed(2)}` : 'Pending Quote';
     return `
       <tr>
         <td><span class="employee-id">#CK-00${c.id}</span></td>
         <td>${c.date ? new Date(c.date).toLocaleDateString() : 'N/A'}</td>
         <td><strong>${c.design}</strong></td>
         <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.description}">${c.description}</td>
+        <td><strong>${displayPrice}</strong></td>
         <td><span class="badge ${getStatusBadge(c.status)}">${c.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        </td>
       </tr>
     `;
   }).join('');
@@ -412,14 +460,14 @@ async function renderCustomerOrderHistory() {
     <div class="card">
       <div class="card-header">
         <h3><i class="fas fa-shopping-bag" style="color:var(--primary); margin-right:0.5rem;"></i> My Online Purchases</h3>
-        <span class="badge badge-purple">${myOnlineOrders.length} Orders Total</span>
+        <span class="badge badge-purple">${myOnlineOrders.length} Orders</span>
       </div>
       <table>
         <thead>
           <tr>
             <th>Order Ref</th>
             <th>Purchase Date</th>
-            <th>Purchased Treats</th>
+            <th>Purchased Items</th>
             <th>Total Amount</th>
             <th>Delivery Status</th>
           </tr>
@@ -433,16 +481,17 @@ async function renderCustomerOrderHistory() {
     <!-- Custom Bakery Workshop Decoration Requests Card -->
     <div class="card" style="margin-top: 2rem;">
       <div class="card-header">
-        <h3><i class="fas fa-birthday-cake" style="color:var(--orange); margin-right:0.5rem;"></i> My Custom Cake Workshop Requests</h3>
-        <span class="badge badge-purple">${myCakeRequests.length} Designs Logged</span>
+        <h3><i class="fas fa-birthday-cake" style="color:var(--orange); margin-right:0.5rem;"></i> My Custom Cake Requests</h3>
+        <span class="badge badge-purple">${myCakeRequests.length} Requests</span>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Request Ref</th>
+            <th>Order ID</th>
             <th>Submission Date</th>
             <th>Cake Design Summary</th>
-            <th>Thematic Description Details</th>
+            <th>Description Details</th>
+            <th>Price</th>
             <th>Approval Status</th>
           </tr>
         </thead>
@@ -461,7 +510,7 @@ function renderCustomerProfileTab() {
   return `
     <div class="card" style="max-width: 700px; margin: 0 auto;">
       <h3><i class="fas fa-user-edit" style="color:var(--primary); margin-right:0.5rem;"></i> Edit My Profile Details</h3>
-      <p class="text-muted">Modify your authenticated delivery routing parameters and credentials below.</p>
+      <p class="text-muted">Modify your account details below.</p><br>
       
       <form id="customerProfileUpdateForm" onsubmit="saveCustomerProfileChanges(event)">
         <div class="form-row">

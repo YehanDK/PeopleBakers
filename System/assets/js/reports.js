@@ -95,7 +95,7 @@ function renderReportUIContainer(selectedDuration = 'daily') {
                 <h2 class="sales-title" style="font-size: 24px; font-weight: bold; color: var(--text-dark); margin: 0;">Sales Summary Data</h2>
             </div>
             <!-- Custom Detailed Report Function Call -->
-            <button id="btn-generate-report" class="btn" onclick="printDetailedSalesReport('${selectedDuration}')"><i class="fas fa-file-pdf"></i> Generate Detailed Report</button>
+            <button id="btn-generate-report" class="btn" onclick="printDetailedSalesReport('${selectedDuration}')"><i class="fas fa-file-pdf"></i> Generate Sales Report</button>
         </div>
 
         <div class="grid-3" style="margin-bottom: 24px;">
@@ -114,7 +114,7 @@ function renderReportUIContainer(selectedDuration = 'daily') {
         </div>
 
         <div class="order-summary" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
-            <span class="lbl-revenue" style="font-weight: 600; color: var(--text-gray); font-size: 1rem;">Total Combined Revenue</span>
+            <span class="lbl-revenue" style="font-weight: 600; color: var(--text-gray); font-size: 1rem;">Total Revenue</span>
             <span class="val-revenue" style="font-size: 1.4rem; font-weight: 700; color: var(--primary-dark);">LKR ${data.totalRevenue.toFixed(2)}</span>
         </div>
     </div>
@@ -140,17 +140,35 @@ function renderReportUIContainer(selectedDuration = 'daily') {
   `;
 }
 
-/**
- * Compiles an isolated document with clean print typography and layouts.
- * Opens an independent context frame to keep the dashboard state intact.
- * @param {string} duration - 'daily' or 'monthly'
- */
-function printDetailedSalesReport(duration) {
+// printing the sales report 
+async function printDetailedSalesReport(duration) {
   const now = new Date();
   const data = getFilteredSalesSummaryData(duration);
   const totalOrders = data.inStoreCount + data.cakeCount + data.onlineCount;
-  const timeLabel = duration === 'monthly' ? 'Monthly Scope' : 'Daily Scope';
+  const timeLabel = duration === 'monthly' ? 'Monthly' : 'Daily';
   
+  // add the report data into the DB
+  try {
+    const reportTypePayload = duration === 'monthly' ? 'Monthly' : 'Daily';
+    
+    // Clean, unified architecture routing integration call
+    const response = await ReportsAPI.create({
+        report_type: reportTypePayload,
+        in_store_orders: data.inStoreCount,
+        online_orders: data.onlineCount,
+        cake_orders: data.cakeCount,
+        total_revenue: data.totalRevenue
+    });
+    
+    if (response.success) {
+        showToast('Sales snapshot synchronized to database logs.');
+    } else {
+        console.error('API Error logging transaction snapshot:', response.message);
+    }
+  } catch (err) {
+    console.error('Failed to communicate with centralized reports endpoint:', err);
+  }
+
   let analyticsRows = '';
   if (data.analytics.length > 0) {
     analyticsRows = data.analytics.map(item => `
@@ -164,19 +182,36 @@ function printDetailedSalesReport(duration) {
     analyticsRows = `<tr><td colspan="3" style="padding: 24px; text-align: center; color: #5a5a72;">No item data logged for this context period.</td></tr>`;
   }
 
-  // Generate document sandbox viewport
-  const printWindow = window.open('', '_blank');
-  
-  printWindow.document.write(`
-    <html>
-    <head>
-        <title>Peoples Bakers - Executive Sales Statement</title>
+  // Calculate dynamic title components based on the duration window
+const year = now.getFullYear();
+const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const currentMonth = monthNames[now.getMonth()];
+const currentDate = now.toLocaleDateString();
+
+const dynamicTitle = duration === 'monthly' 
+  ? `Monthly Sales Report | ${currentMonth} ${year}` 
+  : `Daily Sales Report | ${currentDate}`;
+
+// Generate document sandbox viewport
+const printWindow = window.open('', '_blank');
+
+printWindow.document.write(`
+  <html>
+  <head>
+      <!-- UPDATED: Title tag now updates dynamically based on scope selection parameters -->
+      <title>Peoples Bakers - ${dynamicTitle}</title>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
             * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
             body { padding: 40px; color: #1e1e2a; background: #fff; line-height: 1.5; }
             
             .report-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #6b3fa0; padding-bottom: 20px; margin-bottom: 30px; }
+            
+            /* UPDATED: Flex alignment styling for the company wrapper layout */
+            .company-info { display: flex; align-items: center; gap: 15px; }
+            .company-logo { height: 60px; width: 60px; border-radius: 50%; object-fit: cover; }
+            .company-text { display: flex; flex-direction: column; }
+            
             .company-info h1 { font-size: 26px; color: #4f2e7a; font-weight: 700; margin-bottom: 4px; }
             .company-info p { color: #5a5a72; font-size: 13px; }
             .report-title { text-align: right; }
@@ -211,20 +246,23 @@ function printDetailedSalesReport(duration) {
         <!-- Report Header Section -->
         <div class="report-header">
             <div class="company-info">
-                <h1>PEOPLES BAKERS</h1>
-                <p>Commercial Operations & Financial Ledger Division</p>
-                <p>Generated: ${now.toLocaleDateString()} @ ${now.toLocaleTimeString()}</p>
+                <!-- UPDATED: Added image placeholder linking to your logo asset path -->
+                <img src="assets/images/peoples-bakers-logo.png" class="company-logo" alt="Peoples Bakers Logo">
+                <div class="company-text">
+                    <h1>PEOPLES BAKERS</h1>
+                    <p>Generated: ${now.toLocaleDateString()} @ ${now.toLocaleTimeString()}</p>
+                </div>
             </div>
             <div class="report-title">
-                <h2>Executive Sales Statement</h2>
-                <span class="metadata-badge">${timeLabel} Target Index</span>
+                <h2>Sales Reports Data</h2>
+                <span class="metadata-badge">${timeLabel} Sales Data</span>
             </div>
         </div>
 
         <!-- Metric Summary Dashboard Row -->
         <div class="summary-grid">
             <div class="summary-card">
-                <div class="lbl">In-Store Channels</div>
+                <div class="lbl">In-Store Orders</div>
                 <div class="val">${data.inStoreCount} Trans.</div>
             </div>
             <div class="summary-card">
@@ -232,52 +270,52 @@ function printDetailedSalesReport(duration) {
                 <div class="val">${data.cakeCount} Trans.</div>
             </div>
             <div class="summary-card">
-                <div class="lbl">E-Commerce Pipeline</div>
+                <div class="lbl">Online Store Orders</div>
                 <div class="val">${data.onlineCount} Trans.</div>
             </div>
             <div class="summary-card" style="border-left: 3px solid #6b3fa0;">
-                <div class="lbl">Total Order Outflow</div>
-                <div class="val">${totalOrders} Batches</div>
+                <div class="lbl">Combined Sales</div>
+                <div class="val">${totalOrders} Orders</div>
             </div>
         </div>
 
-        <!-- Section 2: Detailed Performance Summary Matrix -->
-        <div class="section-title">Channel Distribution Breakdown</div>
+        <!-- Section 2: Detailed Sales Information -->
+        <div class="section-title">Order Distribution Breakdown</div>
         <table style="margin-bottom: 20px;">
             <thead>
                 <tr>
-                    <th>Fulfillment Channel Identifier</th>
-                    <th>Target Context</th>
-                    <th style="text-align: right;">Total Transactions Logged</th>
+                    <th>Order Type</th>
+                    <th>Description</th>
+                    <th style="text-align: right;">Total Sales Recorded</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">Physical POS Registers (In-Store)</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Direct Walk-in Retail Inflows</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">In Store Orders</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Orders from Walk-in & Call-in customers from the store.</td>
                     <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; text-align: right;"><strong>${data.inStoreCount}</strong></td>
                 </tr>
                 <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">Baking Custom Workshops</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Decorated & Custom Cake Submissions</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">Custom Cake Orders</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Custom cake requests fom customer. Data combins both Online and physical store custom cake requets.</td>
                     <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; text-align: right;"><strong>${data.cakeCount}</strong></td>
                 </tr>
                 <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">Online Storefront Engine</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Digital Logistics Fulfillment Deliveries</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px;">Online Orders</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; color: #5a5a72;">Orders from the online store front.</td>
                     <td style="padding: 12px; border-bottom: 1px solid #e4dfed; font-size: 14px; text-align: right;"><strong>${data.onlineCount}</strong></td>
                 </tr>
             </tbody>
         </table>
 
-        <!-- Section 3: Product Volumetric Ranks Table -->
-        <div class="section-title">Product Movement Rankings (Sales Analytics)</div>
+        <!-- Section 3: Product Sales Data Table -->
+        <div class="section-title"> Product Sales Analytics Data</div>
         <table>
             <thead>
                 <tr>
                     <th>Product ID</th>
-                    <th>Product Asset Nomenclature</th>
-                    <th style="text-align: right;">Volume Moved</th>
+                    <th>Product Name</th>
+                    <th style="text-align: right;">Items Sold</th>
                 </tr>
             </thead>
             <tbody>
@@ -287,7 +325,7 @@ function printDetailedSalesReport(duration) {
 
         <!-- Consolidated Total Financial Value Bar -->
         <div class="revenue-block">
-            <span>TOTAL REALIZED INFLOW VALUE (LKR)</span>
+            <span>TOTAL Revenue Generated (LKR)</span>
             <strong>LKR ${data.totalRevenue.toFixed(2)}</strong>
         </div>
 

@@ -45,7 +45,7 @@ async function renderManageEmployee() {
         </div>
         <div class="card">
             <h3>Update Employee Details</h3>
-            <p class="text-muted">Select an employee to update their role, salary, address, or phone.</p>
+            <p class="text-muted">Select an employee to update their salary, address, or phone.</p>
             <div class="form-group"><label>Select Employee</label>
                 <select id="empSelect" onchange="loadEmployeeDetails()">
                     <option value="">Select an employee</option>
@@ -53,10 +53,15 @@ async function renderManageEmployee() {
                 </select>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Role</label><select id="updateRole"><option value="salesassistant">Sales Assistant</option><option value="deliveryemployee">Delivery Employee</option><option value="inventorymanager">Inventory Manager</option><option value="employeemanager">Employee Manager</option><option value="financemanager">Finance Manager</option><option value="salessupervisor">Sales Supervisor</option></select></div>
-                <div class="form-group"><label>Phone</label><input id="updatePhone"  /></div>
+                <!-- Changed: Role dropdown replaced with a disabled, read-only text input field -->
+                <div class="form-group"><label>Role</label><input id="updateRole" disabled style="background:#f0ebf7; color:#555;" /></div>
+                <div class="form-group"><label>Phone</label><input id="updatePhone" placeholder="(+94) 70-000-0000" /></div>
             </div>
-            <div class="form-group"><label>Address</label><input id="updateAddress"  /></div>
+            <div class="form-row">
+                <!-- Added: Salary field layout entry slot -->
+                <div class="form-group"><label>Basic Salary (LKR)</label><input type="number" id="updateSalary" min="0" step="0.01" placeholder="0.00" /></div>
+                <div class="form-group"><label>Address</label><input id="updateAddress" placeholder="Address" /></div>
+            </div>
             <button class="btn" onclick="updateEmployee()">Update Employee</button>
         </div>
     `;
@@ -68,27 +73,33 @@ async function renderAddNewEmployee() {
             <h3><i class="fas fa-user-plus" style="color:var(--primary);margin-right:0.5rem;"></i> Add New Employee</h3>
             <form id="addEmployeeInlineForm">
                 <div class="form-row">
-                    <div class="form-group"><label>Full Name <span style="color:var(--danger);">*</span></label><input id="newEmpName"  required /></div>
-                    <div class="form-group"><label>Email <span style="color:var(--danger);">*</span></label><input type="email" id="newEmpEmail"  required /></div>
+                    <div class="form-group"><label>Full Name <span style="color:var(--danger);">*</span></label><input id="newEmpName" placeholder="Sheldon Cooper" required /></div>
+                    <div class="form-group"><label>Email <span style="color:var(--danger);">*</span></label><input type="email" id="newEmpEmail" placeholder="sheldon@peoplesbakers.com" required /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Phone <span style="color:var(--danger);">*</span></label><input id="newEmpPhone"  required /></div>
+                    <div class="form-group"><label>Phone <span style="color:var(--danger);">*</span></label><input id="newEmpPhone" placeholder="(+94) 70-0000-000" required /></div>
                     <div class="form-group"><label>Role <span style="color:var(--danger);">*</span></label>
-                        <select id="newEmpRole">
+                        <!-- Added onchange event mapping to assign baseline salary defaults dynamically -->
+                        <select id="newEmpRole" onchange="updateDefaultSalaryField(this.value)">
                             <option value="salesassistant">Sales Assistant</option>
                             <option value="deliveryemployee">Delivery Employee</option>
                             <option value="inventorymanager">Inventory Manager</option>
                             <option value="employeemanager">Employee Manager</option>
                             <option value="financemanager">Finance Manager</option>
                             <option value="salessupervisor">Sales Supervisor</option>
+                            <option value="companymanager">Company Manager</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Username <span style="color:var(--danger);">*</span></label><input id="newEmpUsername"  required /></div>
-                    <div class="form-group"><label>Password <span style="color:var(--danger);">*</span></label><input type="password" id="newEmpPassword"  required /></div>
+                    <div class="form-group"><label>Username <span style="color:var(--danger);">*</span></label><input id="newEmpUsername" placeholder="cooper" required /></div>
+                    <div class="form-group"><label>Password <span style="color:var(--danger);">*</span></label><input type="password" id="newEmpPassword" placeholder="enter a password" required /></div>
                 </div>
-                <div class="form-group"><label>Address</label><input id="newEmpAddress"  /></div>
+                <div class="form-row">
+                    <!-- Added: Mandatory Editable Salary Field -->
+                    <div class="form-group"><label>Initial Basic Salary (LKR) <span style="color:var(--danger);">*</span></label><input type="number" id="newEmpSalary" min="0" step="0.01" placeholder="50000.00" value="50000.00" required /></div>
+                    <div class="form-group"><label>Address</label><input id="newEmpAddress" placeholder="123 Main St, NYC" /></div>
+                </div>
                 <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Add Employee</button>
             </form>
         </div>
@@ -103,15 +114,16 @@ async function handleAddEmployeeInline(e) {
     const role = document.getElementById('newEmpRole').value;
     const username = document.getElementById('newEmpUsername').value.trim();
     const password = document.getElementById('newEmpPassword').value.trim();
+    const salary = parseFloat(document.getElementById('newEmpSalary').value) || 0; // Grab client salary input
     const address = document.getElementById('newEmpAddress').value.trim();
 
-    if (!name || !email || !phone || !username || !password) {
-        alert('Please fill in all required fields.');
+    if (!name || !email || !phone || !username || !password || salary <= 0) {
+        alert('Please fill in all required fields and specify a valid salary.');
         return;
     }
 
     const response = await EmployeeAPI.create({
-        name, email, phone, role, username, password, address: address || 'N/A'
+        name, email, phone, role, username, password, salary, address: address || 'N/A'
     });
 
     if (response.success) {
@@ -128,7 +140,10 @@ async function loadEmployeeDetails() {
     if (isNaN(index) || index < 0) return;
     selectedEmpIndex = index;
     const emp = employees[index];
-    document.getElementById('updateRole').value = emp.role || 'salesassistant';
+    
+    // Changed: Map properties into the new read-only field and numeric salary target field
+    document.getElementById('updateRole').value = emp.role || '';
+    document.getElementById('updateSalary').value = Number(emp.basic_salary || 0);
     document.getElementById('updateAddress').value = emp.address || '';
     document.getElementById('updatePhone').value = emp.phone || '';
 }
@@ -136,13 +151,15 @@ async function loadEmployeeDetails() {
 async function updateEmployee() {
     if (selectedEmpIndex < 0 || selectedEmpIndex >= employees.length) return;
     const emp = employees[selectedEmpIndex];
+    
     const data = {
         employee_id: emp.employee_id || emp.id,
-        role: document.getElementById('updateRole').value,
-        address: document.getElementById('updateAddress').value || emp.address,
         phone: document.getElementById('updatePhone').value || emp.phone,
+        basic_salary: parseFloat(document.getElementById('updateSalary').value) || 0,
+        address: document.getElementById('updateAddress').value || emp.address
+
     };
-    
+         
     const response = await EmployeeAPI.update(data);
     if (response.success) {
         showToast(`Employee ${emp.name} updated successfully!`);
@@ -245,31 +262,68 @@ async function renderLeaveManagement() {
     const response = await LeaveAPI.list();
     const leaveRequests = response.success ? response.data : [];
     
-    let rows = leaveRequests.map(l => `
+    // 1. Separate requests by status flags
+    const pendingRequests = leaveRequests.filter(l => l.status === 'Pending');
+    const processedRequests = leaveRequests.filter(l => l.status === 'Approved' || l.status === 'Rejected');
+    
+    // 2. Build rows for Pending requests (includes action buttons)
+    let pendingRows = pendingRequests.map(l => `
         <tr>
             <td>${l.employee_name || l.employee_id}</td>
             <td>${l.from_date}</td>
             <td>${l.to_date}</td>
             <td>${l.type}</td>
             <td>${l.reason || 'N/A'}</td>
-            <td><span class="badge ${l.status === 'Approved' ? 'badge-green' : l.status === 'Rejected' ? 'badge-red' : 'badge-orange'}">${l.status}</span></td>
+            <td><span class="badge badge-orange">${l.status}</span></td>
             <td>
-                ${l.status === 'Pending' ? `
-                    <button class="btn btn-sm btn-success" onclick="approveLeave(${l.leave_id})"><i class="fas fa-check"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="rejectLeave(${l.leave_id})"><i class="fas fa-times"></i></button>
-                ` : ''}
+                <button class="btn btn-sm btn-success" onclick="approveLeave(${l.leave_id})"><i class="fas fa-check"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="rejectLeave(${l.leave_id})"><i class="fas fa-times"></i></button>
             </td>
         </tr>
     `).join('');
 
+    // 3. Build rows for Processed requests (read-only history log)
+    let processedRows = processedRequests.map(l => `
+        <tr>
+            <td>${l.employee_name || l.employee_id}</td>
+            <td>${l.from_date}</td>
+            <td>${l.to_date}</td>
+            <td>${l.type}</td>
+            <td>${l.reason || 'N/A'}</td>
+            <td><span class="badge ${l.status === 'Approved' ? 'badge-green' : 'badge-red'}">${l.status}</span></td>
+        </tr>
+    `).join('');
+
     return `
+        <!-- Section 1: Actionable Pending Requests Table -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:0.5rem;"></i> Leave Management</h3>
+                <h3><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:0.5rem;"></i> Active Leave Requests</h3>
+                <span class="badge badge-orange">${pendingRequests.length} Pending</span>
             </div>
             <table>
-                <tr><th>Employee</th><th>From</th><th>To</th><th>Type</th><th>Reason</th><th>Status</th><th>Actions</th></tr>
-                <tbody>${rows || '<tr><td colspan="7" class="text-muted text-center py-2">No leave requests found.</td></tr>'}</tbody>
+                <thead>
+                    <tr><th>Employee</th><th>From</th><th>To</th><th>Type</th><th>Reason</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    ${pendingRows || '<tr><td colspan="7" class="text-muted text-center py-2">No pending leave requests found.</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 2: Historical Log Table -->
+        <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-header">
+                <h3><i class="fas fa-history" style="color:var(--text-gray);margin-right:0.5rem;"></i> Leave History Log</h3>
+                <span class="badge badge-purple">${processedRequests.length} Processed</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Employee</th><th>From</th><th>To</th><th>Type</th><th>Reason</th><th>Resolution Status</th></tr>
+                </thead>
+                <tbody>
+                    ${processedRows || '<tr><td colspan="6" class="text-muted text-center py-2">No processed leave history found.</td></tr>'}
+                </tbody>
             </table>
         </div>
     `;
@@ -279,6 +333,7 @@ async function approveLeave(id) {
     const response = await LeaveAPI.updateStatus(id, 'Approved');
     if (response.success) {
         showToast('Leave request approved.');
+        await loadAppData(); // FIX: Sync data cache from DB before rendering
         renderTab('leave-mgmt');
     } else {
         alert(response.message || 'Failed to approve leave');
@@ -289,8 +344,26 @@ async function rejectLeave(id) {
     const response = await LeaveAPI.updateStatus(id, 'Rejected');
     if (response.success) {
         showToast('Leave request rejected.');
+        await loadAppData(); // FIX: Sync data cache from DB before rendering
         renderTab('leave-mgmt');
     } else {
         alert(response.message || 'Failed to reject leave');
+    }
+}
+
+// Global baseline for salary based on employee type selected | this is for employee creation UI
+window.updateDefaultSalaryField = function(role) {
+    const baselineSalaries = {
+        'companymanager': 100000,
+        'financemanager': 80000,
+        'employeemanager': 80000,
+        'inventorymanager': 70000,
+        'salessupervisor': 70000,
+        'salesassistant': 50000,
+        'deliveryemployee': 50000
+    };
+    const salaryInput = document.getElementById('newEmpSalary');
+    if (salaryInput) {
+        salaryInput.value = baselineSalaries[role] || 50000;
     }
 }

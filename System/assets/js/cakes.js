@@ -6,14 +6,10 @@
 // (Approval itself is a separate axis tracked on custom_cake_orders.status.)
 const CAKE_FULFILLMENT_STATUSES = ['Preparing', 'Ready for Pickup', 'Completed'];
 
-// Sales assistants only ever see cakes the supervisor has approved.
+// Cleaned: Removed unsafe role matching boundaries to ensure consistent active order views
 function getVisibleCakeRequests() {
-  if (currentUser && currentUser.role === 'salesassistant') {
-    // FIX: Include Approved, Preparing, Ready for Pickup, and Completed
-    const visibleStatuses = ['Approved', 'Preparing', 'Ready for Pickup', 'Completed'];
-    return customCakeRequests.filter(c => visibleStatuses.includes(c.status));
-  }
-  return customCakeRequests;
+  const visibleStatuses = ['Approved', 'Preparing', 'Ready for Pickup', 'Completed'];
+  return (customCakeRequests || []).filter(c => c && visibleStatuses.includes(c.status));
 }
 
 function fulfillmentBadgeClass(status) {
@@ -34,10 +30,11 @@ function renderCustomCakeOrders() {
       <td>${c.customer}</td>
       <td>${c.design}</td>
       <td>${c.date}</td>
-      <td><span class="badge ${fulfillmentBadgeClass(c.fulfillmentStatus)}">${c.fulfillmentStatus}</span></td>
+      <td><span class="badge ${fulfillmentBadgeClass(c.status)}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateCustomCakeStatus('${c.id}')"><i class="fas fa-sync"></i> Update Status</button>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        <button class="btn btn-sm btn-outline" onclick="printCustomCakeReceipt('${c.id}')" style="margin-left: 0.25rem;"><i class="fas fa-print"></i> Print</button>
       </td>
     </tr>
   `).join('');
@@ -51,7 +48,7 @@ function renderCustomCakeOrders() {
         </div>
       </div>
       <table>
-        <tr><th>Order ID</th><th>Customer</th><th>Design</th><th>Date</th><th>Fulfillment Status</th><th>Action</th></tr>
+        <tr><th>Order ID</th><th>Customer</th><th>Design</th><th>Date</th><th>Status</th><th>Action</th></tr>
         <tbody id="customCakeOrdersBody">${rows}</tbody>
       </table>
     </div>
@@ -93,10 +90,11 @@ function filterCustomCakeOrders() {
       <td>${c.customer}</td>
       <td>${c.design}</td>
       <td>${c.date}</td>
-      <td><span class="badge ${fulfillmentBadgeClass(c.fulfillmentStatus)}">${c.fulfillmentStatus}</span></td>
+      <td><span class="badge ${fulfillmentBadgeClass(c.status)}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateCustomCakeStatus('${c.id}')"><i class="fas fa-sync"></i> Update Status</button>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        <button class="btn btn-sm btn-outline" onclick="printCustomCakeReceipt('${c.id}')" style="margin-left: 0.25rem;"><i class="fas fa-print"></i> Print</button>
       </td>
     </tr>
   `).join('');
@@ -110,9 +108,11 @@ function filterCustomCakeOrders() {
 async function updateCustomCakeStatus(id) {
   const order = getVisibleCakeRequests().find(c => String(c.id) === String(id));
   if (!order) return;
-  const currentIndex = CAKE_FULFILLMENT_STATUSES.indexOf(order.fulfillmentStatus);
-  // A cake still at its default 'Pending' fulfillment jumps to the first stage.
+  
+  // Fixed: Changed lookup parameter from order.fulfillmentStatus to order.status
+  const currentIndex = CAKE_FULFILLMENT_STATUSES.indexOf(order.status);
   const nextIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
+  
   if (nextIndex < CAKE_FULFILLMENT_STATUSES.length) {
     const nextStatus = CAKE_FULFILLMENT_STATUSES[nextIndex];
     const response = await OrdersAPI.updateStatus(order.id, nextStatus);
@@ -122,9 +122,9 @@ async function updateCustomCakeStatus(id) {
     }
     await loadAppData();
     showToast(`Custom cake ${id} status updated to ${nextStatus}`);
-    renderTab('custom-cake');
+    renderTab(currentTab); // Fixed: Refreshes the active workspace dynamically
   } else {
-    showToast(`Custom cake ${id} is already ${order.fulfillmentStatus}.`);
+    showToast(`Custom cake ${id} is already ${order.status}.`);
   }
 }
 
@@ -140,7 +140,7 @@ async function updateCustomCakeStatusFromSelect() {
   }
   await loadAppData();
   showToast(`Custom cake ${id} status updated to ${newStatus}`);
-  renderTab('custom-cake');
+  renderTab(currentTab); // Fixed: Refreshes the active workspace dynamically
 }
 
 function renderManualRequest() {
@@ -193,11 +193,9 @@ async function submitManualRequest() {
 
 // ----- Sales Supervisor: Cake Management (Approved only) -----
 function renderCustomCakeManagement() {
-  // Show ALL custom cake requests (pending, approved, rejected) so the supervisor
-  // can see customer-submitted and assistant-submitted requests in one place.
-  const allCakes = customCakeRequests;
+  const visibleCakes = getVisibleCakeRequests();
 
-  let rows = allCakes.map(c => {
+  let rows = visibleCakes.map(c => {
     const badgeClass = c.status === 'Approved' ? 'badge-green'
       : (c.status === 'Rejected' ? 'badge-red' : 'badge-orange');
     return `
@@ -209,7 +207,6 @@ function renderCustomCakeManagement() {
       <td><span class="badge ${badgeClass}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
-        <button class="btn btn-sm btn-yellow" onclick="openEditCakeModal('${c.id}')"><i class="fas fa-edit"></i> Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>`;
@@ -233,12 +230,14 @@ function renderCustomCakeManagement() {
 
 function filterCustomCakes() {
   const search = document.getElementById('cakeSearch').value.toLowerCase();
-  const filtered = customCakeRequests.filter(c => (
+  const visibleCakes = getVisibleCakeRequests();
+  const filtered = visibleCakes.filter(c => (
     String(c.id).toLowerCase().includes(search) ||
     c.customer.toLowerCase().includes(search) ||
     c.design.toLowerCase().includes(search)
   ));
   const tbody = document.getElementById('customCakeBody');
+  
   tbody.innerHTML = filtered.map(c => {
     const badgeClass = c.status === 'Approved' ? 'badge-green'
       : (c.status === 'Rejected' ? 'badge-red' : 'badge-orange');
@@ -251,113 +250,9 @@ function filterCustomCakes() {
       <td><span class="badge ${badgeClass}">${c.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
-        <button class="btn btn-sm btn-yellow" onclick="openEditCakeModal('${c.id}')"><i class="fas fa-edit"></i> Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCustomCake('${c.id}')"><i class="fas fa-trash"></i> Delete</button>
       </td>
     </tr>`;
   }).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No cakes found matching your search.</td></tr>';
-}
-
-// ----- Edit Cake Modal (Popup) -----
-function openEditCakeModal(id) {
-  const cake = customCakeRequests.find(c => String(c.id) === String(id));
-  if (!cake) return;
-
-  const modalContent = `
-    <div class="modal-overlay active" id="editCakeModal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3><i class="fas fa-edit" style="color:var(--primary);margin-right:0.5rem;"></i> Edit Custom Cake</h3>
-          <button class="modal-close" onclick="closeEditCakeModal()">&times;</button>
-        </div>
-        <form id="editCakeForm">
-          <div class="form-group">
-            <label>Order ID</label>
-            <input value="${cake.id}" disabled style="background:#f0ebf7;color:#555;" />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Customer Name</label>
-              <input id="editCakeCustomer" value="${cake.customer}" required />
-            </div>
-            <div class="form-group">
-              <label>Phone</label>
-              <input id="editCakePhone" value="${cake.phone}" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Design</label>
-            <input id="editCakeDesign" value="${cake.design}" required />
-          </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea id="editCakeDescription" rows="4">${cake.description}</textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Price (LKR)</label>
-              <input type="number" id="editCakePrice" min="0" step="0.01"  value="${cake.price || ''}" />
-            </div>
-            <div class="form-group">
-              <label>Date</label>
-              <input type="date" id="editCakeDate" value="${cake.date}" />
-            </div>
-          </div>
-          <div class="btn-group">
-            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update Cake</button>
-            <button type="button" class="btn btn-outline" onclick="closeEditCakeModal()">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-
-  // Remove existing modal if any
-  const existingModal = document.getElementById('editCakeModal');
-  if (existingModal) {
-    existingModal.remove();
-  }
-
-  // Add modal to body
-  document.body.insertAdjacentHTML('beforeend', modalContent);
-
-  // Store the cake ID for the form submission
-  document.getElementById('editCakeForm').dataset.cakeId = id;
-
-  // Handle form submission
-  document.getElementById('editCakeForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const cakeId = this.dataset.cakeId;
-    const cake = customCakeRequests.find(c => String(c.id) === String(cakeId));
-    if (!cake) return;
-
-    const payload = {
-      custom_order_id: cakeId,
-      customer_name: document.getElementById('editCakeCustomer').value.trim(),
-      design_details: document.getElementById('editCakeDesign').value.trim(),
-      description: document.getElementById('editCakeDescription').value.trim(),
-      price: document.getElementById('editCakePrice').value,
-      pickup_date: document.getElementById('editCakeDate').value,
-    };
-
-    const response = await OrdersAPI.update(payload);
-    if (!response.success) {
-      alert(response.message || 'Failed to update custom cake request');
-      return;
-    }
-
-    await loadAppData();
-    closeEditCakeModal();
-    showToast(`Custom cake ${cakeId} updated successfully!`);
-    renderTab('cake-mgmt');
-  });
-}
-
-function closeEditCakeModal() {
-  const modal = document.getElementById('editCakeModal');
-  if (modal) {
-    modal.remove();
-  }
 }
 
 function viewCustomCake(id) {
@@ -393,9 +288,16 @@ function viewCustomCake(id) {
 async function approveCustomCake(id) {
   const returnTab = currentTab;
   const priceInput = document.getElementById('viewCakePrice');
-  const price = priceInput ? (parseFloat(priceInput.value) || 0) : 0;
-  const approved_by = currentUser && currentUser.employee_id ? currentUser.employee_id : null;
-  const response = await CustomAPI.approve(id, approved_by, price);
+  let price = priceInput ? parseFloat(priceInput.value) : 0;
+
+  // Programmatic validation: Ensure a valid price is filled when accepting
+  if (!priceInput || isNaN(price) || price <= 0) {
+    alert("Please enter a valid pricing value amount (LKR) before accepting this order.");
+    if (priceInput) priceInput.focus(); // Highlights the input box for the supervisor
+    return; // Halts execution so the unpriced data is never sent to the backend module
+  }
+
+  const response = await CustomAPI.approve(id, null, price);
   if (!response.success) {
     alert(response.message || 'Failed to approve custom cake request');
     return;
@@ -424,18 +326,15 @@ function closeViewCakeModal() {
 }
 
 async function deleteCustomCake(id) {
-  // Remember the tab we're deleting from so we return to it after
-  const returnTab = currentTab;
-  if (!confirm(`Delete custom cake request ${id}?`)) return;
-  // Pending/rejected requests only live in custom_cake_orders
+  if (!confirm(`Are you sure you want to permanently delete custom cake request #${id}?`)) return;
   const response = await CustomAPI.delete(id);
   if (!response.success) {
     alert(response.message || 'Failed to delete custom cake request');
     return;
   }
   await loadAppData();
-  showToast(`Custom cake ${id} deleted.`);
-  renderTab(returnTab);
+  showToast(`Custom cake #${id} deleted successfully.`);
+  renderTab(currentTab);
 }
 
 function renderViewCustomCakeRequest() {
@@ -518,3 +417,116 @@ function filterViewCustomCakes() {
     </tr>
   `).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No pending requests matching your search.</td></tr>';
 }
+
+// Global function to print receipts for custom cake orders
+window.printCustomCakeReceipt = function(orderId) {
+  const order = customCakeRequests.find(c => String(c.id) === String(orderId));
+  if (!order) {
+    alert("Custom cake order data could not be located in application storage references.");
+    return;
+  }
+  
+  const now = new Date();
+  const printWindow = window.open('', '_blank');
+  const displayPrice = order.price && Number(order.price) > 0 ? `LKR ${Number(order.price).toFixed(2)}` : 'Pending Quote';
+  
+  printWindow.document.write(`
+  <html>
+  <head>
+      <title>Peoples Bakers - Receipt #CK-${order.id}</title>
+      <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+          
+          body { 
+              min-height: 100vh; 
+              display: flex; 
+              flex-direction: column; 
+              padding: 40px; 
+              color: #1e1e2a; 
+              background: #fff; 
+          }
+          .receipt-content { flex: 1; }
+          
+          .receipt-header { text-align: center; border-bottom: 2px solid #6b3fa0; padding-bottom: 15px; margin-bottom: 20px; }
+          .receipt-header h1 { font-size: 28px; color: #4f2e7a; font-weight: 700; letter-spacing: -0.5px; }
+          .receipt-header p { font-size: 13px; color: #5a5a72; font-weight: 600; text-transform: uppercase; margin-top: 4px; letter-spacing: 1px; }
+          
+          .detail-block { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #e4dfed; }
+          .detail-title { font-size: 12px; font-weight: 700; color: #5a5a72; text-transform: uppercase; margin-bottom: 4px; }
+          .detail-value { font-size: 14px; color: #2d2d3f; font-weight: 500; }
+          
+          .total-block { border-top: 2px solid #4f2e7a; padding-top: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+          .total-block span { font-size: 14px; font-weight: 700; color: #5a5a72; }
+          .total-block strong { font-size: 22px; font-weight: 700; color: #4f2e7a; }
+          
+          .metadata-section { font-size: 13px; line-height: 1.6; color: #2d2d3f; border-top: 1px solid #e4dfed; padding-top: 15px; }
+          .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+          .meta-label { font-weight: 600; color: #5a5a72; }
+          .meta-value { font-weight: 500; color: #1e1e2a; }
+          
+          .thank-you { text-align: center; margin-top: 30px; font-size: 12px; color: #8c7aa8; font-weight: 500; }
+          
+          @media print { 
+              body { padding: 20px; height: 100vh; } 
+              @page { size: auto; margin: 0; } 
+          }
+      </style>
+  </head>
+  <body>
+      <div class="receipt-content">
+          <div class="receipt-header">
+              <h1>Peoples Bakers</h1>
+              <p>Custom Cake Request Receipt</p>
+          </div>
+          
+          <div class="detail-block">
+              <div class="detail-title">Cake Design Summary</div>
+              <div class="detail-value"><strong>${order.design}</strong></div>
+          </div>
+          
+          <div class="detail-block">
+              <div class="detail-title">Thematic Description Details</div>
+              <div class="detail-value">${order.description || 'No description provided.'}</div>
+          </div>
+          
+          <div class="total-block">
+              <span>NET AMOUNT</span>
+              <strong>${displayPrice}</strong>
+          </div>
+          
+          <div class="metadata-section">
+              <div class="meta-row">
+                  <span class="meta-label">Customer Name:</span>
+                  <span class="meta-value">${order.customer}</span>
+              </div>
+              <div class="meta-row">
+                  <span class="meta-label">Contact Phone:</span>
+                  <span class="meta-value">${order.phone || 'N/A'}</span>
+              </div>
+              <div class="meta-row">
+                  <span class="meta-label">Required Date:</span>
+                  <span class="meta-value">${order.date || 'N/A'}</span>
+              </div>
+              <div class="meta-row">
+                  <span class="meta-label">Printed Date:</span>
+                  <span class="meta-value">${now.toLocaleDateString()} @ ${now.toLocaleTimeString()}</span>
+              </div>
+              <div class="meta-row" style="margin-top: 10px; font-size: 15px;">
+                  <span class="meta-label" style="color: #4f2e7a; font-weight: 700;">ORDER ID:</span>
+                  <span class="meta-value" style="color: #4f2e7a; font-weight: 700;">#CK-00${order.id}</span>
+              </div>
+          </div>
+      </div>
+      <p class="thank-you">Thank you for your business! Come back again.</p>
+  </body>
+  </html>
+  `);
+  
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+  }, 250);
+};
