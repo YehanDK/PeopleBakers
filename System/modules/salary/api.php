@@ -15,19 +15,22 @@ class SalaryAPI {
         if ($employee_id === 'undefined' || $employee_id === 'null' || $employee_id === '') {
             $employee_id = null;
         }
-
-        $sql = "SELECT s.*, e.name as employee_name FROM salaries s
-                LEFT JOIN employees e ON s.employee_id = e.employee_id";
+        
+        // REMOVED: 'Paid' AS status column
+        $sql = "SELECT s.salary_id, s.emp_id AS employee_id, s.base_salary, s.bonus, s.total AS amount, 
+                       s.created_date AS payment_date, s.month, e.emp_name as employee_name 
+                FROM Salary s
+                LEFT JOIN Employee e ON s.emp_id = s.emp_id";
 
         if ($employee_id) {
-            $sql .= " WHERE s.employee_id = ?";
-            $stmt = $this->pdo->prepare($sql . " ORDER BY s.payment_date DESC");
+            $sql .= " WHERE s.emp_id = ?";
+            $stmt = $this->pdo->prepare($sql . " ORDER BY s.created_date DESC");
             $stmt->execute([$employee_id]);
         } else {
-            $stmt = $this->pdo->query($sql . " ORDER BY s.payment_date DESC");
+            $stmt = $this->pdo->query($sql . " ORDER BY s.created_date DESC");
         }
 
-        $salaries = $stmt->fetchAll();
+        $salaries = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $this->handler->sendResponse(true, $salaries);
     }
 
@@ -35,53 +38,51 @@ class SalaryAPI {
         $input = json_decode(file_get_contents('php://input'), true);
         $data = $input ?: $_POST;
 
-        $employee_id = $data['employee_id'] ?? 0;
-        $amount = $data['amount'] ?? 0;
-        $payment_date = $data['payment_date'] ?? date('Y-m-d');
-        $status = $data['status'] ?? 'Pending';
+        $emp_id = $data['employee_id'] ?? 0;
+        $total = $data['amount'] ?? 0;
+        $created_date = $data['payment_date'] ?? date('Y-m-d');
+        $month = date('F', strtotime($created_date));
 
-        if (!$employee_id || $amount <= 0) {
+        if (!$emp_id || $total <= 0) {
             return $this->handler->sendResponse(false, null, 'Employee and a valid amount are required');
         }
 
-        if (!in_array($status, ['Pending', 'Paid'])) {
-            $status = 'Pending';
-        }
+        try {
+            $this->pdo->beginTransaction();
 
-        $stmt = $this->pdo->prepare("INSERT INTO salaries (employee_id, amount, payment_date, status) VALUES (?, ?, ?, ?)");
-        $result = $stmt->execute([$employee_id, $amount, $payment_date, $status]);
+            $empStmt = $this->pdo->prepare("SELECT base_salary FROM Employee WHERE emp_id = ?");
+            $empStmt->execute([$emp_id]);
+            $employee = $empStmt->fetch(PDO::FETCH_ASSOC);
+            
+            $base_salary = $employee ? (float)$employee['base_salary'] : $total;
+            $bonus = $total - $base_salary;
 
-        if ($result) {
-            $id = $this->pdo->lastInsertId();
-            $this->handler->sendResponse(true, ['salary_id' => $id], 'Salary saved successfully');
-        } else {
-            $this->handler->sendResponse(false, null, 'Failed to save salary');
-        }
-    }
+            $stmt = $this->pdo->prepare("INSERT INTO Salary (emp_id, created_date, base_salary, bonus, total, month) VALUES (?, ?, ?, ?, ?, ?)");
+            $result = $stmt->execute([$emp_id, $created_date, $base_salary, $bonus, $total, $month]);
 
-    public function updateStatus() {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $data = $input ?: $_POST;
-        $id = $data['salary_id'] ?? $_GET['id'] ?? 0;
-        $status = $data['status'] ?? '';
+            if ($result) {
+                $id = $this->pdo->lastInsertId();
+                // Automated expense record: 
+                $expStmt = $this->pdo->prepare("INSERT INTO ExpenseRecord (ammount, description, bill_number, date) VALUES (?, ?, ?, ?)");
+                $expStmt->execute([$total, 'employee salary', $id, $created_date]);
+                
+                // commit the data transaction
+                $this->pdo->commit();
 
-        if (!$id || empty($status)) {
-            return $this->handler->sendResponse(false, null, 'Salary ID and status are required');
-        }
 
-        if (!in_array($status, ['Pending', 'Paid'])) {
-            return $this->handler->sendResponse(false, null, 'Invalid status');
-        }
+                $this->handler->sendResponse(true, ['salary_id' => $id], 'Salary saved successfully');   
+            } else {
+                $this->handler->sendResponse(false, null, 'Failed to save salary');
+            }
 
-        $stmt = $this->pdo->prepare("UPDATE salaries SET status = ? WHERE salary_id = ?");
-        $result = $stmt->execute([$status, $id]);
-
-        if ($result) {
-            $this->handler->sendResponse(true, null, 'Salary status updated successfully');
-        } else {
-            $this->handler->sendResponse(false, null, 'Failed to update salary status');
+            
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            $this->handler->sendResponse(false, null, 'Failed to save salary: ' . $e->getMessage());
         }
     }
+
+    // REMOVED: Entire updateStatus() method block[cite: 11]
 
     public function delete() {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -91,7 +92,7 @@ class SalaryAPI {
             return $this->handler->sendResponse(false, null, 'Salary ID required');
         }
 
-        $stmt = $this->pdo->prepare("DELETE FROM salaries WHERE salary_id = ?");
+        $stmt = $this->pdo->prepare("DELETE FROM Salary WHERE salary_id = ?");
         $result = $stmt->execute([$id]);
 
         if ($result) {

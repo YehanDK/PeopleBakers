@@ -3,6 +3,7 @@
 let currentUser = null;
 let employees = [];
 let inventoryItems = [];
+let productCategories = [];
 let leaveRequests = [];
 let restockRecords = [];
 let suppliers = [];
@@ -15,6 +16,7 @@ let stockAlerts = [];
 let instoreCart = [];
 let inStoreOrderCounter = 1;
 let customCakeCounter = 1;
+let expenseRecords = []; 
 
 function handleLogout() {
     currentUser = null;
@@ -27,6 +29,10 @@ function handleLogout() {
     // Reset to default Customer Login tab view on logout
     const tabCustomer = document.getElementById('tabCustomer');
     if (tabCustomer) tabCustomer.click();
+
+    // Reset active tab so the next login lands on their own default tab
+    currentTab = 'dashboard';
+    isProfilePage = false;
 }
 
 async function loadAppData() {
@@ -49,6 +55,13 @@ async function loadAppData() {
             const alertsResponse = await InventoryAPI.alerts();
             if (alertsResponse.success) {
                 stockAlerts = alertsResponse.data || [];
+            }
+
+            // Load product categories for the inventory category list
+            try {
+                productCategories = (await getCategories()) || [];
+            } catch (e) {
+                productCategories = [];
             }
         }
 
@@ -75,6 +88,7 @@ async function loadAppData() {
                 suppliers = suppliersResponse.data || [];
             }
         }
+        
         // TODO : employees api
         if (typeof EmployeeAPI !== 'undefined') {
             const employeesResponse = await EmployeeAPI.list();
@@ -96,6 +110,19 @@ async function loadAppData() {
             }
         }
 
+        if (typeof ExpensesAPI !== 'undefined') {
+        const expenseResponse = await ExpensesAPI.list();
+        if (expenseResponse.success) {
+            expenseRecords = (expenseResponse.data || []).map(r => ({
+                id: r.id,
+                bill_number: r.bill_number || 'N/A',
+                description: r.description || 'No description applied',
+                date: r.date || '',
+                amount: Number(r.amount || 0)
+                }));
+            }
+        }
+
         if (typeof OrdersAPI !== 'undefined') {
             const ordersResponse = await OrdersAPI.list('all');
             if (ordersResponse.success) {
@@ -106,7 +133,9 @@ async function loadAppData() {
                     total: Number(order.total_amount || order.total || 0),
                     status: order.status || 'Pending',
                     date: order.order_date || order.date || '',
-                    order_type: order.order_type || order.type || '',
+                    address: order.customer_address || order.address || '',
+                    phone: order.cust_phone_no || order.phone || '',
+                    order_type: (order.order_type || '').toLowerCase(),
                     items: Array.isArray(order.items) ? order.items.map(item => ({
                         ...item,
                         name: item.product_name || item.name || '',
@@ -115,23 +144,59 @@ async function loadAppData() {
                     })) : []
                 }));
 
-                onlineOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'online');
-                inStoreOrders = orders.filter(order => (order.order_type || '').toLowerCase() === 'instore');
-                customCakeRequests = orders.filter(order => (order.order_type || '').toLowerCase() === 'custom').map(order => ({
+                onlineOrders = orders.filter(o => o.order_type === 'online');
+                inStoreOrders = orders.filter(o => o.order_type === 'instore');
+                customCakeRequests = orders.filter(o => o.order_type === 'custom').map(order => ({
                     ...order,
-                    customer: order.customer_name || order.customer || 'Guest Customer',
+                    customer: order.customer_name || order.customer,
                     design: order.design_details || order.description || 'Custom cake request',
                     phone: order.phone || 'N/A',
                     description: order.description || order.design_details || 'No description provided',
-                    date: order.date || order.order_date || ''
+                    date: order.requested_date || order.order_date || '', // <--- Change this line to map requested_date
+                    status: order.cake_status || order.status || 'Pending',
+                    fulfillmentStatus: order.status || 'Pending'
                 }));
                 customCakeCounter = Math.max(1, customCakeRequests.length + 1);
                 inStoreOrderCounter = Math.max(1, inStoreOrders.length + 1);
             }
         }
+
+        // Load custom cake REQUESTS directly from custom_cake_orders.
+        // Pending requests live ONLY here until a supervisor approves them;
+        // approved/rejected ones stay here too (with order_id set once approved).
+        if (typeof CustomAPI !== 'undefined') {
+            try {
+                const cakeResp = await CustomAPI.list();
+                if (cakeResp.success) {
+                    const cakeRows = (cakeResp.data || []).map(c => ({
+                        id: c.custom_order_id,
+                        custom_order_id: c.custom_order_id,
+                        order_id: c.order_id,
+                        customer: c.customer_name || 'Guest Customer',
+                        customer_name: c.customer_name,
+                        customer_id: c.customer_id,
+                        phone: c.phone || 'N/A',
+                        design: c.design_details || c.description || 'Custom cake request',
+                        description: c.description || c.design_details || 'No description provided',
+                        price: (c.total_amount !== null && c.total_amount !== undefined) ? c.total_amount : '',
+                        date: c.pickup_date || c.created_at || '',
+                        pickup_date: c.pickup_date,
+                        status: c.status || 'PendingApproval',
+                        approved_by: c.approved_by,
+                        approved_at: c.approved_at,
+                        fulfillmentStatus: c.status === 'Approved' ? 'Pending' : c.status
+                    }));
+                    // Single source of truth: custom_cake_orders (keyed by custom_order_id)
+                    customCakeRequests = cakeRows;
+                    customCakeCounter = Math.max(1, cakeRows.length + 1);
+                }
+            } catch (e) {
+                console.error('Failed to load custom cake requests:', e);
+            }
+        }
     } catch (error) {
         console.error('Failed to load app data:', error);
-    }
+    }    
 }
 
 // TODO :employee login 
@@ -169,6 +234,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
         await loadAppData();
+        currentTab = 'dashboard';
+        isProfilePage = false;
         renderApp();
     } catch (error) {
         errorEl.style.display = 'block';
@@ -309,6 +376,7 @@ if (customerLoginForm) {
             
             await loadAppData();
             currentTab = 'online-store'; // Set default view route
+            isProfilePage = false;
             renderApp();
             
         } catch (error) {

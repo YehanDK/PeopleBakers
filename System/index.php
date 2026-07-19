@@ -25,11 +25,11 @@
       <form id="customerLoginForm">
         <div class="form-group">
           <label><i class="fas fa-envelope"></i> Email Address</label>
-          <input type="email" id="customerLoginEmail" placeholder="Enter your registered email" required />
+          <input type="email" id="customerLoginEmail"  required />
         </div>
         <div class="form-group">
           <label><i class="fas fa-lock"></i> Password</label>
-          <input type="password" id="customerLoginPassword" placeholder="Enter your password" required />
+          <input type="password" id="customerLoginPassword"  required />
         </div>
         <button type="submit" class="btn-login">Sign In</button>
         <div id="customerLoginError" class="login-error"></div>
@@ -43,23 +43,23 @@
       <form id="customerRegisterForm">
         <div class="form-group">
           <label><i class="fas fa-user"></i> Full Name</label>
-          <input type="text" id="regName" placeholder="e.g. Jane Doe" required />
+          <input type="text" id="regName"  required />
         </div>
         <div class="form-group">
           <label><i class="fas fa-envelope"></i> Email Address</label>
-          <input type="email" id="regEmail" placeholder="jane@example.com" required />
+          <input type="email" id="regEmail"  required />
         </div>
         <div class="form-group">
           <label><i class="fas fa-phone"></i> Phone Number</label>
-          <input type="text" id="regPhone" placeholder="e.g. 0771234567" required/>
+          <input type="text" id="regPhone"  required/>
         </div>
         <div class="form-group">
           <label><i class="fas fa-map-marker-alt"></i> Delivery Address</label>
-          <input type="text" id="regAddress" placeholder="Enter your delivery neighborhood/street" required/>
+          <input type="text" id="regAddress"  required/>
         </div>
         <div class="form-group">
           <label><i class="fas fa-lock"></i> Choose Password</label>
-          <input type="password" id="regPassword" placeholder="••••••••" required />
+          <input type="password" id="regPassword"  required />
         </div>
         <button type="submit" class="btn-login">Create Account</button>
         <div id="regError" class="login-error"></div>
@@ -73,11 +73,11 @@
       <form id="loginForm">
         <div class="form-group">
           <label><i class="fas fa-user"></i> Username</label>
-          <input type="text" id="loginUsername" placeholder="Enter your username" required />
+          <input type="text" id="loginUsername"  required />
         </div>
         <div class="form-group">
           <label><i class="fas fa-lock"></i> Password</label>
-          <input type="password" id="loginPassword" placeholder="Enter your password" required />
+          <input type="password" id="loginPassword"  required />
         </div>
         <button type="submit" class="btn-login">Staff Sign In</button>
         <div id="loginError" class="login-error">Invalid username or password</div>
@@ -144,18 +144,27 @@
         <button class="modal-close" id="closeAddItemModal">&times;</button>
       </div>
       <form id="addItemForm">
-        <div class="form-group">
-          <label>Item Name <span style="color:var(--danger);">*</span></label>
-          <input type="text" id="newItemName" placeholder="e.g. Whole Wheat Bread" required />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Item Name <span style="color:var(--danger);">*</span></label>
+            <input type="text" id="newItemName"  required />
+          </div>
+          <div class="form-group">
+              <label>Category</label>
+              <select id="newItemCategory">
+                  <option value="">None</option>
+
+              </select>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Price ($) <span style="color:var(--danger);">*</span></label>
-            <input type="number" id="newItemPrice" placeholder="0.00" min="0.01" step="0.01" required />
+            <label>Price (LKR) <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="newItemPrice"  min="0.01" step="0.01" required />
           </div>
           <div class="form-group">
             <label>Initial Stock <span style="color:var(--danger);">*</span></label>
-            <input type="number" id="newItemStock" placeholder="0" min="0" required />
+            <input type="number" id="newItemStock"  min="0" required />
           </div>
         </div>
         <div class="btn-group">
@@ -166,11 +175,32 @@
     </div>
   </div>
 
+  <!-- MODAL: Add New Category -->
+  <div class="modal-overlay" id="addCategoryModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-tags" style="color:var(--primary);margin-right:0.5rem;"></i> Add New Category</h3>
+        <button class="modal-close" id="closeAddCategoryModal">&times;</button>
+      </div>
+      <form id="addCategoryForm">
+        <div class="form-group">
+          <label>Category Name <span style="color:var(--danger);">*</span></label>
+          <input type="text" id="newCategoryName" required />
+        </div>
+        <div id="addCategoryError" class="login-error"></div>
+        <div class="btn-group">
+          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Category</button>
+          <button type="button" class="btn btn-outline" id="cancelAddCategoryBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: Adjust Quantity / Price -->
   <div class="modal-overlay" id="editItemModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3><i class="fas fa-pen" style="color:var(--primary);margin-right:0.5rem;"></i> Adjust Item</h3>
+        <h3><i class="fas fa-pen" style="color:var(--primary);margin-right:0.5rem;"></i> Edit Item Details</h3>
         <button class="modal-close" id="closeEditItemModal">&times;</button>
       </div>
       <form id="editItemForm">
@@ -180,7 +210,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>New Price ($)</label>
+            <label>New Price (LKR)</label>
             <input type="number" id="editItemPrice" min="0.01" step="0.01" required />
           </div>
           <div class="form-group">
@@ -211,6 +241,27 @@
         </div>
         <div class="form-group"><label>Items</label><textarea id="detailItems" disabled rows="4"></textarea></div>
         <div class="form-group"><label>Total</label><input id="detailTotal" disabled /></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Delivery Details -->
+  <div class="modal-overlay" id="deliveryDetailsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fas fa-truck-fast" style="color:var(--primary);margin-right:0.5rem;"></i> Delivery Details</h3>
+        <button class="modal-close" id="closeDeliveryDetailsModal">&times;</button>
+      </div>
+      <div id="deliveryDetailsContent">
+        <div class="form-group"><label>Order ID</label><input id="deliveryDetailId" disabled /></div>
+        <div class="form-group"><label>Customer</label><input id="deliveryDetailCustomer" disabled /></div>
+        <div class="form-row">
+          <div class="form-group"><label>Phone</label><input id="deliveryDetailPhone" disabled /></div>
+          <div class="form-group"><label>Status</label><input id="deliveryDetailStatus" disabled /></div>
+        </div>
+        <div class="form-group"><label>Delivery Address</label><textarea id="deliveryDetailAddress" disabled rows="3"></textarea></div>
+        <div class="form-group"><label>Items</label><textarea id="deliveryDetailItems" disabled rows="4"></textarea></div>
+        <div class="form-group"><label>Total</label><input id="deliveryDetailTotal" disabled /></div>
       </div>
     </div>
   </div>
@@ -256,7 +307,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Unit Cost ($)</label>
+            <label>Unit Cost (LKR)</label>
             <input type="number" id="editRestockUnitCost" min="0.01" step="0.01" />
           </div>
           <div class="form-group">
@@ -320,13 +371,13 @@
           </div>
           <div class="form-group">
             <label>Quantity Received <span style="color:var(--danger);">*</span></label>
-            <input type="number" id="restockQty" placeholder="e.g. 20" min="1" required>
+            <input type="number" id="restockQty"  min="1" required>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Unit Cost ($) <span style="color:var(--danger);">*</span></label>
-            <input type="number" id="restockUnitCost" placeholder="e.g. 12.50" min="0.01" step="0.01" required>
+            <label>Unit Cost (LKR) <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="restockUnitCost"  min="0.01" step="0.01" required>
           </div>
           <div class="form-group">
             <label>Restock Date <span style="color:var(--danger);">*</span></label>
@@ -335,7 +386,7 @@
         </div>
         <div class="form-group">
           <label>Notes (Optional)</label>
-          <textarea id="restockNotes" placeholder="Any additional notes about this restock..."></textarea>
+          <textarea id="restockNotes" ></textarea>
         </div>
         <div class="btn-group">
           <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Restock</button>
@@ -350,6 +401,10 @@
   <!-- ============================================================ -->
   <!-- SCRIPTS - Load in correct order -->
   <!-- ============================================================ -->
+
+  <!-- 0. PDF GENERATION (bundled locally so reports work offline) -->
+  <script src="assets/js/jspdf.umd.min.js"></script>
+  <script src="assets/js/jspdf.plugin.autotable.min.js"></script>
 
   <!-- 1. API CLIENT -->
   <script src="assets/js/api_client.js"></script>
@@ -377,6 +432,9 @@
 
   <!-- 9. REPORTS -->
   <script src="assets/js/reports.js"></script>
+
+  <!-- 10. expense Records -->
+  <script src="assets/js/expenses.js"></script>
 
   <!-- 10. MODALS -->
   <script src="assets/js/modals.js"></script>

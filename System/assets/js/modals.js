@@ -10,6 +10,14 @@ document.getElementById('orderDetailsModal').addEventListener('click', function(
   if (e.target === this) this.classList.remove('active');
 });
 
+// Delivery Details Modal
+document.getElementById('closeDeliveryDetailsModal').addEventListener('click', function() {
+  document.getElementById('deliveryDetailsModal').classList.remove('active');
+});
+document.getElementById('deliveryDetailsModal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('active');
+});
+
 // View Restock Modal
 document.getElementById('closeViewRestockModal').addEventListener('click', closeViewRestockModal);
 document.getElementById('viewRestockModal').addEventListener('click', function(e) {
@@ -31,6 +39,14 @@ document.getElementById('addItemModal').addEventListener('click', function(e) {
   if (e.target === this) closeAddItemModal();
 });
 document.getElementById('addItemForm').addEventListener('submit', handleAddItem);
+
+// Add Category Modal
+document.getElementById('closeAddCategoryModal').addEventListener('click', closeAddCategoryModal);
+document.getElementById('cancelAddCategoryBtn').addEventListener('click', closeAddCategoryModal);
+document.getElementById('addCategoryModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAddCategoryModal();
+});
+document.getElementById('addCategoryForm').addEventListener('submit', handleAddCategory);
 
 // Edit Item Modal
 document.getElementById('closeEditItemModal').addEventListener('click', closeEditItemModal);

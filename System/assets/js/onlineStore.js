@@ -18,7 +18,7 @@ async function renderOnlineStore() {
       <div class="card-header">
         <h3><i class="fas fa-shop" style="color:var(--primary);margin-right:0.5rem;"></i> Peoples Bakers Storefront</h3>
         <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; width:100%; max-width:600px;">
-            <input type="text" class="search-box" style="max-width:100%; flex:2;" placeholder="Search delicious treats..." id="storeSearchInput" oninput="filterOnlineStore()" />
+            <input type="text" class="search-box" style="max-width:100%; flex:2;"  id="storeSearchInput" oninput="filterOnlineStore()" />
             <select id="storeCategoryFilter" class="form-group" style="margin-bottom:0; flex:1; border-radius:40px; padding:0.5rem 1rem; border:1.5px solid var(--border-light);" onchange="filterOnlineStore()">
             <option value="all">All Categories</option>
             ${filterOptions}
@@ -136,7 +136,7 @@ function generateOnlineCartHTML() {
     
     <div style="border-top:1px solid var(--border-light); padding-top:1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center;">
       <span style="font-weight:600; color:var(--text-gray); font-size:0.9rem;">Estimated Total:</span>
-      <span style="font-size:1.4rem; font-weight:700; color:var(--primary-dark);">$${totalSum.toFixed(2)}</span>
+      <span style="font-size:1.4rem; font-weight:700; color:var(--primary-dark);">LKR ${totalSum.toFixed(2)}</span>
     </div>
     
     <button class="btn btn-success" style="width:100%; justify-content:center; padding:0.75rem;" onclick="checkoutOnlineCart(${totalSum})">
@@ -214,23 +214,23 @@ async function checkoutOnlineCart(totalSum) {
 
       <div style="background:var(--primary-light); padding:1rem; border-radius:12px; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-weight:600; color:var(--primary-dark);">Total Amount:</span>
-        <span style="font-size:1.4rem; font-weight:700; color:var(--primary-dark);">$${totalSum.toFixed(2)}</span>
+        <span style="font-size:1.4rem; font-weight:700; color:var(--primary-dark);">LKR ${totalSum.toFixed(2)}</span>
       </div>
 
       <form id="checkoutPaymentForm">
         <div id="cardDetailsFormFields">
           <div class="form-group">
             <label><i class="far fa-credit-card"></i> Card Number</label>
-            <input type="text" id="cartCardNum" placeholder="4111 2222 3333 4444" maxlength="19" required />
+            <input type="text" id="cartCardNum"  maxlength="19" required />
           </div>
           <div class="form-row" style="display:flex; gap:1rem;">
             <div class="form-group" style="flex:1;">
               <label>Expiry Date</label>
-              <input type="text" id="cartCardExpiry" placeholder="MM/YY" maxlength="5" required />
+              <input type="text" id="cartCardExpiry"  maxlength="5" required />
             </div>
             <div class="form-group" style="flex:1;">
               <label>CVC Security Code</label>
-              <input type="password" id="cartCardCVC" placeholder="123" maxlength="3" required />
+              <input type="password" id="cartCardCVC"  maxlength="3" required />
             </div>
           </div>
         </div>
@@ -298,15 +298,19 @@ function renderCustomerCakeRequest() {
       </div>
       <div class="form-group">
         <label>Phone Number</label>
-        <input id="manualPhone" value="${currentUser.phone || ''}" placeholder="(555) 000-0000" />
+        <input id="manualPhone" value="${currentUser.phone || ''}"  />
       </div>
       <div class="form-group">
         <label>Cake Design</label>
-        <input id="manualDesign" placeholder="e.g. 2-tier floral anniversary cake" />
+        <input id="manualDesign"  />
       </div>
       <div class="form-group">
         <label>Description</label>
-        <textarea id="manualDescription" placeholder="Describe the cake design requirements, custom layers, thematic colors, icing details, etc." rows="4"></textarea>
+        <textarea id="manualDescription"  rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Required Pickup Date <span style="color:var(--danger);">*</span></label>
+        <input type="date" id="manualDate" required />
       </div>
       <button class="btn" onclick="submitCustomerCakeRequest()">Submit Request</button>
     </div>
@@ -318,21 +322,24 @@ async function submitCustomerCakeRequest() {
   const design = document.getElementById('manualDesign').value.trim();
   const description = document.getElementById('manualDescription').value.trim();
   const phone = document.getElementById('manualPhone').value.trim();
+  const pickup_date = document.getElementById('manualDate').value;
 
   if (!design) {
     alert('Please enter your requested cake design layout summary.');
     return;
   }
 
+
   const response = await OrdersAPI.create({
     customer_name: currentUser.name,
     customer_id: currentUser.customer_id,
+    phone: phone,
     order_type: 'Custom',
     total_amount: 0,
     items: [],
     design_details: design,
     description: description || 'No specific descriptions applied.',
-    pickup_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Auto-schedule pickup date safely for 7 days out
+    pickup_date: pickup_date
   });
 
   if (!response.success) {
@@ -356,12 +363,12 @@ async function renderCustomerOrderHistory() {
 
   // 1. Filter standard storefront online purchases for this customer
   const myOnlineOrders = onlineOrders.filter(order => 
-    order.customer_id && Number(order.customer_id) === currentCustomerId
-  );
+        order.customer_id && Number(order.customer_id) === currentCustomerId
+    );
 
   // 2. Filter custom cake request configurations for this customer
   const myCakeRequests = customCakeRequests.filter(cake => 
-    cake.customer_id && Number(cake.customer_id) === currentCustomerId
+      cake.customer_id && Number(cake.customer_id) === currentCustomerId
   );
 
   // Helper utility to apply context-aware semantic status badges cleanly[cite: 5]
@@ -380,7 +387,7 @@ async function renderCustomerOrderHistory() {
         <td><span class="employee-id">#ON-00${o.id}</span></td>
         <td>${o.date ? new Date(o.date).toLocaleDateString() : 'N/A'}</td>
         <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemSummary}">${itemSummary}</td>
-        <td><strong>$${o.total.toFixed(2)}</strong></td>
+        <td><strong>LKR ${o.total.toFixed(2)}</strong></td>
         <td><span class="badge ${getStatusBadge(o.status)}">${o.status}</span></td>
       </tr>
     `;
@@ -475,18 +482,18 @@ function renderCustomerProfileTab() {
           </div>
           <div class="form-group">
             <label>Contact Phone Line</label>
-            <input type="text" id="profPhone" value="${currentUser.phone || ''}" placeholder="e.g. 0771234567" />
+            <input type="text" id="profPhone" value="${currentUser.phone || ''}"  />
           </div>
         </div>
         
         <div class="form-group">
           <label>Primary Fulfillment Delivery Address</label>
-          <textarea id="profAddress" style="border-radius:12px; resize:vertical;" rows="3" placeholder="Enter your delivery neighborhood/street">${currentUser.address || ''}</textarea>
+          <textarea id="profAddress" style="border-radius:12px; resize:vertical;" rows="3" >${currentUser.address || ''}</textarea>
         </div>
 
         <div class="form-group" style="border-top: 1px dashed var(--border-light); padding-top: 1rem; margin-top: 1.5rem;">
           <label><i class="fas fa-key"></i> New Password (Leave completely blank to keep existing password)</label>
-          <input type="password" id="profPassword" placeholder="••••••••" autocomplete="new-password" />
+          <input type="password" id="profPassword"  autocomplete="new-password" />
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
@@ -501,43 +508,33 @@ function renderCustomerProfileTab() {
 
 // Transaction Bridge function transmitting structural profile modifications
 async function saveCustomerProfileChanges(event) {
-  event.preventDefault();
+    event.preventDefault();
+    const name = document.getElementById('profName').value.trim();
+    const email = document.getElementById('profEmail').value.trim();
+    const phone = document.getElementById('profPhone').value.trim();
+    const address = document.getElementById('profAddress').value.trim();
+    const password = document.getElementById('profPassword').value;
 
-  const name = document.getElementById('profName').value.trim();
-  const email = document.getElementById('profEmail').value.trim();
-  const phone = document.getElementById('profPhone').value.trim();
-  const address = document.getElementById('profAddress').value.trim();
-  const password = document.getElementById('profPassword').value;
-
-  if (!name || !email) {
-    alert('Name and Email are mandatory account identifiers.');
-    return;
-  }
-
-  try {
-    const response = await CustomerAPI.update({
-      customer_id: currentUser.customer_id,
-      name,
-      email,
-      phone,
-      address,
-      password
-    });
-
-    if (response.success) {
-      currentUser = response.data;
-      currentUser.displayRole = 'Valued Customer';
-      localStorage.setItem('peoplesBakersUser', JSON.stringify(currentUser));
-
-      showToast('Your profile records have been updated successfully.');
-
-      document.getElementById('userNameDisplay').textContent = currentUser.name;
-      renderTab('customer-profile');
-    } else {
-      alert(response.message || 'Failed to apply modifications.');
+    try {
+        const response = await CustomerAPI.update({
+            customer_id: currentUser.customer_id,
+            name, email, phone, address, password
+        });
+        
+        if (response.success) {
+            // FIX: Ensure currentUser is updated before setting property
+            currentUser = { ...currentUser, name: name, email: email, phone: phone, address: address };
+            currentUser.displayRole = 'Valued Customer'; 
+            
+            localStorage.setItem('peoplesBakersUser', JSON.stringify(currentUser));
+            showToast('Your profile records have been updated successfully.');
+            document.getElementById('userNameDisplay').textContent = currentUser.name;
+            renderTab('customer-profile');
+        } else {
+            alert(response.message || 'Failed to apply modifications.');
+        }
+    } catch (error) {
+        console.error('Profile adjustment error:', error);
+        alert('Logistics endpoint transmission error: ' + error.message);
     }
-  } catch (error) {
-    console.error('Profile adjustment error:', error);
-    alert('Logistics endpoint transmission error: ' + error.message);
-  }
 }

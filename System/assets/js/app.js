@@ -31,7 +31,7 @@ const ROLE_CONFIG = {
       { id: 'online-orders', icon: 'fa-truck', label: 'Online Orders' },
       { id: 'instore-orders', icon: 'fa-store', label: 'In-Store Orders' },
       { id: 'custom-cake', icon: 'fa-cake-candles', label: 'Custom Cakes' },
-      { id: 'manual-request', icon: 'fa-pen', label: 'Manual Request' },
+      { id: 'manual-request', icon: 'fa-pen', label: 'Custom Order Request' },
     ],
     renderMap: {
       'dashboard': renderSalesAssistantDashboard,
@@ -57,7 +57,7 @@ const ROLE_CONFIG = {
     menu: [
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
       { id: 'inventory', icon: 'fa-boxes-stacked', label: 'Inventory' },
-      { id: 'restock', icon: 'fa-arrows-rotate', label: 'Restock' },
+      { id: 'restock', icon: 'fa-arrows-rotate', label: 'Stock Record' },
       { id: 'notifications', icon: 'fa-bell', label: 'Notifications' },
     ],
     renderMap: {
@@ -87,12 +87,14 @@ const ROLE_CONFIG = {
     menu: [
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
       { id: 'view-employees', icon: 'fa-users', label: 'View Employees' },
-      { id: 'sales-reports', icon: 'fa-chart-simple', label: 'View Reports' },
+      { id: 'sales-reports', icon: 'fa-chart-bar', label: 'View Reports' },
+      { id: 'expense-records', icon: 'fa-wallet', label: 'Expense Records' },
     ],
     renderMap: {
       'dashboard': renderCompanyManagerDashboard,
       'view-employees': renderViewEmployees,
-      'sales-reports': renderViewSalesReports,
+      'sales-reports': renderCompanyReports,
+      'expense-records': renderExpenseRecords,
     }
   },
   financemanager: {
@@ -100,19 +102,21 @@ const ROLE_CONFIG = {
     menu: [
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
       { id: 'calc-salary', icon: 'fa-calculator', label: 'Calculate Salary' },
-      { id: 'sales-reports', icon: 'fa-chart-simple', label: 'Generate Reports' },
+      { id: 'sales-reports', icon: 'fa-chart-bar', label: 'Generate Reports' },
+      { id: 'expense-records', icon: 'fa-wallet', label: 'Expense Records' },
     ],
     renderMap: {
       'dashboard': renderFinanceManagerDashboard,
       'calc-salary': renderCalculateSalary,
-      'sales-reports': renderGenerateSalesReports,
+      'sales-reports': renderFinanceReports,
+      'expense-records': renderExpenseRecords,
     }
   },
   salessupervisor: {
     label: 'Sales Supervisor',
     menu: [
       { id: 'dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
-      { id: 'cake-mgmt', icon: 'fa-cake-candles', label: 'Cake Management' },
+      { id: 'cake-mgmt', icon: 'fa-cake-candles', label: 'Custom Cake Management' },
       { id: 'view-cake', icon: 'fa-eye', label: 'View Cake Requests' },
     ],
     renderMap: {
@@ -140,6 +144,11 @@ async function renderApp() {
   if (!currentUser) return;
   const config = ROLE_CONFIG[currentUser.role];
   if (!config) return;
+
+  // Guard: if the active tab doesn't belong to this user's role, fall back to dashboard
+  if (!isProfilePage && !config.renderMap[currentTab]) {
+    currentTab = 'dashboard';
+  }
 
   document.getElementById('userNameDisplay').textContent = currentUser.name;
   document.getElementById('userRoleDisplay').textContent = config.label;
@@ -196,6 +205,12 @@ function renderTab(tabId) {
 async function renderContent() {
   if (!currentUser) return;
   const config = ROLE_CONFIG[currentUser.role];
+  if (!config) return;
+
+  // Guard: if the active tab doesn't belong to this user's role, fall back to dashboard
+  if (!isProfilePage && !config.renderMap[currentTab]) {
+    currentTab = 'dashboard';
+  }
 
   let content;
   let title;

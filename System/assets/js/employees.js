@@ -7,6 +7,9 @@ async function loadEmployees() {
             ...employee,
             id: String(employee.employee_id ?? employee.id ?? ''),
             employee_id: String(employee.employee_id ?? employee.id ?? ''),
+            salary: employee.salary || 0,
+            basic_salary: Number(employee.basic_salary || 0),
+            payment_date: employee.payment_date || 'N/A',
         }));
     }
     return employees;
@@ -19,8 +22,7 @@ async function renderManageEmployee() {
             <td><span class="employee-id">${emp.employee_id || emp.id}</span></td>
             <td>${emp.name}</td>
             <td>${emp.role}</td>
-            <td>$${(45000 + index * 5000).toLocaleString()}</td>
-            <td><span class="badge badge-green">Active</span></td>
+            <td>${emp.phone || 'N/A'}</td>
             <td>
                 <button class="btn btn-sm btn-yellow" onclick="editEmployee(${index})"><i class="fas fa-pen"></i></button>
                 <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${index})"><i class="fas fa-trash"></i></button>
@@ -33,12 +35,11 @@ async function renderManageEmployee() {
             <div class="card-header">
                 <h3><i class="fas fa-user-gear" style="color:var(--primary);margin-right:0.5rem;"></i> Manage Employees</h3>
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-                    <input class="search-box" placeholder="Search employees..." id="manageEmpSearch" oninput="filterManageEmployees()" />
-                    <button class="btn btn-success" onclick="renderTab('add-employee')"><i class="fas fa-plus"></i> Add Employee</button>
+                    <input class="search-box"  id="manageEmpSearch" oninput="filterManageEmployees()" />
                 </div>
             </div>
             <table>
-                <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Salary</th><th>Status</th><th>Actions</th></tr>
+                <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Phone</th><th>Actions</th></tr>
                 <tbody id="manageEmpBody">${rows}</tbody>
             </table>
         </div>
@@ -53,9 +54,9 @@ async function renderManageEmployee() {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Role</label><select id="updateRole"><option value="salesassistant">Sales Assistant</option><option value="deliveryemployee">Delivery Employee</option><option value="inventorymanager">Inventory Manager</option><option value="employeemanager">Employee Manager</option><option value="financemanager">Finance Manager</option><option value="salessupervisor">Sales Supervisor</option></select></div>
-                <div class="form-group"><label>Phone</label><input id="updatePhone" placeholder="(555) 000-0000" /></div>
+                <div class="form-group"><label>Phone</label><input id="updatePhone"  /></div>
             </div>
-            <div class="form-group"><label>Address</label><input id="updateAddress" placeholder="Address" /></div>
+            <div class="form-group"><label>Address</label><input id="updateAddress"  /></div>
             <button class="btn" onclick="updateEmployee()">Update Employee</button>
         </div>
     `;
@@ -67,11 +68,11 @@ async function renderAddNewEmployee() {
             <h3><i class="fas fa-user-plus" style="color:var(--primary);margin-right:0.5rem;"></i> Add New Employee</h3>
             <form id="addEmployeeInlineForm">
                 <div class="form-row">
-                    <div class="form-group"><label>Full Name <span style="color:var(--danger);">*</span></label><input id="newEmpName" placeholder="John Doe" required /></div>
-                    <div class="form-group"><label>Email <span style="color:var(--danger);">*</span></label><input type="email" id="newEmpEmail" placeholder="john@peoplesbakers.com" required /></div>
+                    <div class="form-group"><label>Full Name <span style="color:var(--danger);">*</span></label><input id="newEmpName"  required /></div>
+                    <div class="form-group"><label>Email <span style="color:var(--danger);">*</span></label><input type="email" id="newEmpEmail"  required /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Phone <span style="color:var(--danger);">*</span></label><input id="newEmpPhone" placeholder="(555) 000-0000" required /></div>
+                    <div class="form-group"><label>Phone <span style="color:var(--danger);">*</span></label><input id="newEmpPhone"  required /></div>
                     <div class="form-group"><label>Role <span style="color:var(--danger);">*</span></label>
                         <select id="newEmpRole">
                             <option value="salesassistant">Sales Assistant</option>
@@ -84,10 +85,10 @@ async function renderAddNewEmployee() {
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Username <span style="color:var(--danger);">*</span></label><input id="newEmpUsername" placeholder="john.d" required /></div>
-                    <div class="form-group"><label>Password <span style="color:var(--danger);">*</span></label><input type="password" id="newEmpPassword" placeholder="Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢Ã¢â¬Â¢" required /></div>
+                    <div class="form-group"><label>Username <span style="color:var(--danger);">*</span></label><input id="newEmpUsername"  required /></div>
+                    <div class="form-group"><label>Password <span style="color:var(--danger);">*</span></label><input type="password" id="newEmpPassword"  required /></div>
                 </div>
-                <div class="form-group"><label>Address</label><input id="newEmpAddress" placeholder="123 Main St, NYC" /></div>
+                <div class="form-group"><label>Address</label><input id="newEmpAddress"  /></div>
                 <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Add Employee</button>
             </form>
         </div>
@@ -188,14 +189,13 @@ function filterManageEmployees() {
             <td><span class="employee-id">${emp.employee_id || emp.id}</span></td>
             <td>${emp.name}</td>
             <td>${emp.role}</td>
-            <td>$${(45000 + origIndex * 5000).toLocaleString()}</td>
-            <td><span class="badge badge-green">Active</span></td>
+            <td>${emp.phone || 'N/A'}</td>
             <td>
                 <button class="btn btn-sm btn-yellow" onclick="editEmployee(${origIndex})"><i class="fas fa-pen"></i></button>
                 <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${origIndex})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>`;
-    }).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No employees found matching your search.</td></tr>';
+    }).join('') || '<tr><td colspan="5" class="text-muted text-center py-2">No employees found matching your search.</td></tr>';
 }
 
 async function renderViewEmployees() {
@@ -206,7 +206,6 @@ async function renderViewEmployees() {
             <td>${emp.name}</td>
             <td>${emp.role}</td>
             <td>${emp.email}</td>
-            <td><span class="badge badge-green">Active</span></td>
         </tr>`
     ).join('');
 
@@ -214,10 +213,10 @@ async function renderViewEmployees() {
         <div class="card">
             <div class="card-header">
                 <h3><i class="fas fa-users" style="color:var(--primary);margin-right:0.5rem;"></i> Employee List</h3>
-                <input class="search-box" placeholder="Search employees..." id="viewEmpSearch" oninput="filterViewEmployees()" />
+                <input class="search-box"  id="viewEmpSearch" oninput="filterViewEmployees()" />
             </div>
             <table>
-                <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Email</th><th>Status</th></tr>
+                <tr><th>Emp ID</th><th>Name</th><th>Role</th><th>Email</th></tr>
                 <tbody id="viewEmpBody">${rows}</tbody>
             </table>
         </div>
@@ -238,9 +237,8 @@ function filterViewEmployees() {
             <td>${emp.name}</td>
             <td>${emp.role}</td>
             <td>${emp.email}</td>
-            <td><span class="badge badge-green">Active</span></td>
         </tr>`
-    ).join('') || '<tr><td colspan="5" class="text-muted text-center py-2">No employees found matching your search.</td></tr>';
+    ).join('') || '<tr><td colspan="4" class="text-muted text-center py-2">No employees found matching your search.</td></tr>';
 }
 
 async function renderLeaveManagement() {

@@ -92,9 +92,11 @@ const OrdersAPI = {
     list: (type) => API.call('orders', 'list', 'GET', { type }),
     get: (id) => API.call('orders', 'get', 'GET', { id }),
     create: (data) => API.call('orders', 'create', 'POST', data),
+    update: (data) => API.call('orders', 'update', 'POST', data),
     updateStatus: (order_id, status) => API.call('orders', 'updateStatus', 'POST', { order_id, status }),
+    updateCakeStatus: (order_id, status) => API.call('orders', 'updateCakeStatus', 'POST', { order_id, status }),
+    delete: (id) => API.call('orders', 'delete', 'POST', { id }),
 };
-
 
 //  Restock APi
 const RestockAPI = {
@@ -114,6 +116,33 @@ const LeaveAPI = {
 const SalaryAPI = {
     list: (employee_id) => API.call('salary', 'list', 'GET', { employee_id }),
     create: (data) => API.call('salary', 'create', 'POST', data),
-    updateStatus: (salary_id, status) => API.call('salary', 'updateStatus', 'POST', { salary_id, status }),
     delete: (id) => API.call('salary', 'delete', 'POST', { id }),
+};
+
+// Custom Cake Order workflow (sales assistant requests -> supervisor approves -> order created)
+const CustomAPI = {
+    create: (data) => API.call('custom', 'create', 'POST', data),
+    list: () => API.call('orders', 'list', 'GET', { type: 'custom' }),
+    
+    // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Approved'
+    approve: (custom_order_id, approved_by, price) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Approved' }),
+    
+    // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Rejected'
+    reject: (custom_order_id) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Rejected' }),
+    
+    // Reuses the existing 'delete' endpoint
+    delete: (custom_order_id) => API.call('orders', 'delete', 'POST', { id: custom_order_id })
+};
+
+// expense record api
+const ExpensesAPI = {
+    list: () => API.call('expenses', 'list', 'GET'),
+    create: (data) => API.call('expenses', 'create', 'POST', data),
+    delete: (id) => API.call('expenses', 'delete', 'POST', { id })
+};
+
+// saved sales reports api (finance creates, company views)
+const ReportsAPI = {
+    create: (data) => API.call('reports', 'create', 'POST', data),
+    list:   () => API.call('reports', 'list', 'GET')
 };
