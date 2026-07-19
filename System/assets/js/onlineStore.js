@@ -214,7 +214,7 @@ async function checkoutOnlineCart(totalSum) {
 
       <div style="background:var(--primary-light); padding:1rem; border-radius:12px; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-weight:600; color:var(--primary-dark);">Total Amount:</span>
-        <span style="font-size:1.4rem; font-weight:700; color:var(--primary-dark);">KLR ${totalSum.toFixed(2)}</span>
+        <span style="font-size:1.4rem; font-weight:700; color:var(--primary-dark);">LKR ${totalSum.toFixed(2)}</span>
       </div>
 
       <form id="checkoutPaymentForm">
