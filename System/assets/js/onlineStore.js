@@ -381,7 +381,7 @@ async function renderCustomerOrderHistory() {
 
   // Compile individual table rows for standard storefront orders[cite: 5]
   let storeRows = myOnlineOrders.map(o => {
-    const itemSummary = o.items.map(i => `${i.qty}x ${i.name}`).join(', ') || 'Product asset unlinked';
+  const itemSummary = o.items.map(i => `${i.qty}x ${i.name}`).join(', ') || 'Product asset unlinked'; //
     return `
       <tr>
         <td><span class="employee-id">#ON-00${o.id}</span></td>
@@ -389,19 +389,28 @@ async function renderCustomerOrderHistory() {
         <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemSummary}">${itemSummary}</td>
         <td><strong>$${o.total.toFixed(2)}</strong></td>
         <td><span class="badge ${getStatusBadge(o.status)}">${o.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-info" onclick="viewOnlineOrderDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
+        </td>
       </tr>
     `;
   }).join('');
 
   // Compile individual table rows for custom cake workshop designs[cite: 5]
+  // Compile individual table rows for custom bakery workshop designs
   let cakeRows = myCakeRequests.map(c => {
+    const displayPrice = c.price && Number(c.price) > 0 ? `LKR ${Number(c.price).toFixed(2)}` : 'Pending Quote';
     return `
       <tr>
         <td><span class="employee-id">#CK-00${c.id}</span></td>
         <td>${c.date ? new Date(c.date).toLocaleDateString() : 'N/A'}</td>
         <td><strong>${c.design}</strong></td>
         <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.description}">${c.description}</td>
+        <td><strong>${displayPrice}</strong></td>
         <td><span class="badge ${getStatusBadge(c.status)}">${c.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        </td>
       </tr>
     `;
   }).join('');
@@ -443,6 +452,7 @@ async function renderCustomerOrderHistory() {
             <th>Submission Date</th>
             <th>Cake Design Summary</th>
             <th>Thematic Description Details</th>
+            <th>Price</th>
             <th>Approval Status</th>
           </tr>
         </thead>
