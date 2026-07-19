@@ -99,12 +99,12 @@ function renderExpenseListTableHTML() {
   return `
     <div class="card">
         <div class="report-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <div>
-                <h3 style="margin: 0; font-size: 1.1rem; text-transform: capitalize;">Ledger Index: ${activeExpenseFilterTab.replace('time', ' time')}</h3>
-            </div>
-            <button class="btn" onclick="window.print()"><i class="fas fa-print"></i> Generate Report</button>
-        </div>
-        
+      <div>
+          <h3 style="margin: 0; font-size: 1.1rem; text-transform: capitalize;">Ledger Index: ${activeExpenseFilterTab.replace('time', ' time')}</h3>
+      </div>
+      <button class="btn" onclick="printDetailedExpenseReport()"><i class="fas fa-print"></i> Generate Report</button>
+  </div>
+          
         <table>
             <thead>
                 <tr>
@@ -224,3 +224,197 @@ async function handleLogExpenseForm(event) {
     alert('Logistics transmission terminal loop breakdown: ' + error.message);
   }
 }
+
+
+// creates the expense record report
+window.printDetailedExpenseReport = function() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+  const currentMonthStr = `${year}-${month}`;
+
+  // Filter records to align with the active workspace sub-tab
+  const filteredRecords = expenseRecords.filter(r => {
+    if (activeExpenseFilterTab === 'daily') return r.date === todayStr;
+    if (activeExpenseFilterTab === 'monthly') return r.date.startsWith(currentMonthStr);
+    return true; 
+  });
+
+  // Calculate totals
+  const totalOutflow = filteredRecords.reduce((sum, r) => sum + r.amount, 0);
+  const restockTotal = filteredRecords.filter(r => r.description.toLowerCase().includes('restock') || r.description.toLowerCase().includes('supplier')).reduce((sum, r) => sum + r.amount, 0);
+  const salaryTotal = filteredRecords.filter(r => r.description.toLowerCase().includes('salary') || r.description.toLowerCase().includes('payroll') || r.description.toLowerCase().includes('employee')).reduce((sum, r) => sum + r.amount, 0);
+  const otherTotal = totalOutflow - restockTotal - salaryTotal;
+
+  // Build the context-aware dynamic title parameters
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const currentMonthName = monthNames[now.getMonth()];
+  const currentDateStr = now.toLocaleDateString();
+  
+  let dynamicTitle = "";
+  let headerLabel = "";
+  
+  if (activeExpenseFilterTab === 'daily') {
+    dynamicTitle = `Daily Expense Statement | ${currentDateStr}`;
+    headerLabel = "Daily Expense Statement";
+  } else if (activeExpenseFilterTab === 'monthly') {
+    dynamicTitle = `Monthly Expense Statement | ${currentMonthName} ${year}`;
+    headerLabel = "Monthly Expense Statement";
+  } else {
+    dynamicTitle = `All Time Expense Statement | As of ${currentDateStr}`;
+    headerLabel = "All Time Expense Statement";
+  }
+
+  let tableRowsHtml = filteredRecords.map(r => `
+    <tr>
+      <td style="padding: 14px 10px; border-bottom: 1px solid #e5e7eb; font-family: monospace; font-size: 13px; color: #4b5563;">#EXP-${r.id}</td>
+      <td style="padding: 14px 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; color: #111827; font-weight: 500;">${r.bill_number}</td>
+      <td style="padding: 14px 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; color: #4b5563;">${r.description}</td>
+      <td style="padding: 14px 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; color: #6b7280;">${r.date}</td>
+      <td style="padding: 14px 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; color: #111827; text-align: right; font-weight: 600;">LKR ${r.amount.toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  if (filteredRecords.length === 0) {
+    tableRowsHtml = `<tr><td colspan="5" style="padding: 32px; text-align: center; color: #9ca3af; font-size: 14px;">No transactions recorded for this context period.</td></tr>`;
+  }
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+    <head>
+        <title>Peoples Bakers - ${dynamicTitle}</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+            * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+            body { padding: 50px; color: #374151; background: #fff; line-height: 1.5; }
+            
+            /* Asymmetrical Minimalist Header */
+            .statement-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #111827; }
+            .meta-left h1 { font-size: 24px; color: #111827; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
+            .meta-left p { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+            .meta-right { text-align: right; }
+            .meta-right h2 { font-size: 18px; color: #991b1b; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+            .meta-right p { color: #4b5563; font-size: 13px; }
+            
+            /* Context Description Box */
+            .context-summary { font-size: 14px; color: #4b5563; margin-bottom: 40px; max-width: 650px; }
+            
+            /* Minimalist Linear Metrics Matrix */
+            .summary-row { display: flex; margin-bottom: 50px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px 0; background-color: #fafafa; }
+            .summary-item { flex: 1; padding: 0 25px; border-right: 1px solid #e5e7eb; }
+            .summary-item:last-child { border-right: none; }
+            .summary-item .lbl { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+            .summary-item .val { font-size: 16px; font-weight: 600; color: #111827; }
+            .summary-item.total-focus .val { color: #991b1b; font-weight: 700; }
+            
+            /* Data Table Reset */
+            .section-title { font-size: 14px; font-weight: 600; color: #111827; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th { text-align: left; padding: 12px 10px; font-size: 11px; font-weight: 600; color: #4b5563; background-color: #f3f4f6; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #d1d5db; }
+            
+            /* Stacked Balance Breakdown Receipt Block */
+            .balance-container { display: flex; justify-content: flex-end; margin-top: 20px; margin-bottom: 50px; }
+            .balance-table { width: 320px; margin-bottom: 0; }
+            .balance-table td { padding: 8px 10px; font-size: 14px; border-bottom: none; }
+            .balance-table tr.grand-row td { border-top: 1px solid #111827; border-bottom: 3px double #111827; padding-top: 12px; margin-top: 4px; }
+            
+            /* Compliance Signature Path */
+            .footer-signatures { display: flex; justify-content: space-between; margin-top: 70px; page-break-inside: avoid; }
+            .sig-line-box { width: 42%; text-align: left; }
+            .line { border-bottom: 1px solid #9ca3af; margin-bottom: 8px; height: 40px; }
+            .label { font-size: 12px; color: #6b7280; font-weight: 500; }
+            
+            @media print {
+                body { padding: 0; }
+                .summary-row { background-color: #fafafa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Minimalist Header Banner -->
+        <div class="statement-header">
+            <div class="meta-left">
+                <h1>PEOPLES BAKERS</h1>
+                <p>Finance Reporting</p>
+            </div>
+            <div class="meta-right">
+                <h2>${headerLabel}</h2>
+                <p>Generated: ${currentDateStr} @ ${now.toLocaleTimeString()}</p>
+            </div>
+        </div>
+        
+        <div class="context-summary">
+            This document lists the local expenses tracked within company database. It breaks down how much we spent on raw inventory, employee wages, and any other costs.
+        </div>
+        
+        <!-- Linear Metrics Section -->
+        <div class="summary-row">
+            <div class="summary-item">
+                <div class="lbl">Restock Expenses</div>
+                <div class="val">LKR ${restockTotal.toFixed(2)}</div>
+            </div>
+            <div class="summary-item">
+                <div class="lbl">Salary Expenses</div>
+                <div class="val">LKR ${salaryTotal.toFixed(2)}</div>
+            </div>
+            <div class="summary-item">
+                <div class="lbl">Other</div>
+                <div class="val">LKR ${otherTotal.toFixed(2)}</div>
+            </div>
+            <div class="summary-item total-focus">
+                <div class="lbl">Total Expense</div>
+                <div class="val">LKR ${totalOutflow.toFixed(2)}</div>
+            </div>
+        </div>
+        
+        <div class="section-title">Expense Records Within the Duration</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Record ID</th>
+                    <th style="width: 20%;">Bill Number</th>
+                    <th style="width: 35%;">Expense Description</th>
+                    <th style="width: 15%;">Recorded Date</th>
+                    <th style="width: 15%; text-align: right;">Ammount</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRowsHtml}
+            </tbody>
+        </table>
+        
+        <!-- Right-Aligned Balanced Breakdown Box -->
+        <div class="balance-container">
+            <table class="balance-table">
+                <tr class="grand-row">
+                    <td style="font-weight: 600; color: #111827;">Final Total Expenditure:</td>
+                    <td style="text-align: right; font-weight: 700; color: #991b1b; font-size: 16px;">LKR ${totalOutflow.toFixed(2)}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Compliance Footer -->
+        <div class="footer-signatures">
+            <div class="sig-line-box">
+                <div class="line"></div>
+                <div class="label">Report Compiler Signature</div>
+            </div>
+            <div class="sig-line-box">
+                <div class="line"></div>
+                <div class="label">Authorized Financial Manager Sign-off</div>
+            </div>
+        </div>
+    </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 250);
+};
