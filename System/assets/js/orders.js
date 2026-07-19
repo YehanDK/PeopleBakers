@@ -500,18 +500,17 @@ function viewDeliveryDetails(id) {
 
 // ----- Delivery Management with Search -----
 function renderDeliveryManagement() {
+  const activeStatuses = ['Ready for Pickup', 'Out for Delivery'];
+  const activeOrders = onlineOrders.filter(o => activeStatuses.includes(o.status));
+  const deliveredOrders = onlineOrders.filter(o => o.status === 'Delivered');
 
-  // allowing only "ready for pickup" - "delivered" orders
-  const allowedStatuses = ['Ready for Pickup', 'Out for Delivery', 'Delivered'];
-  const filteredDeliveryOrders = onlineOrders.filter(o => allowedStatuses.includes(o.status));
-
-  let rows = filteredDeliveryOrders.map(o => `
+  let activeRows = activeOrders.map(o => `
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
       <td>${o.customer_phone || o.phone || 'N/A'}</td>
       <td>${o.address || 'N/A'}</td>
-      <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : 'badge-orange'}">${o.status}</span></td>
+      <td><span class="badge badge-orange">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
         <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
@@ -519,19 +518,33 @@ function renderDeliveryManagement() {
     </tr>
   `).join('');
 
+  let deliveredRows = deliveredOrders.map(o => `
+    <tr>
+      <td>${o.id}</td>
+      <td>${o.customer}</td>
+      <td>${o.customer_phone || o.phone || 'N/A'}</td>
+      <td>${o.address || 'N/A'}</td>
+      <td><span class="badge badge-green">${o.status}</span></td>
+      <td>
+        <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
+      </td>
+    </tr>
+  `).join('');
+
   return `
+    <!-- Container 1: Actionable Active Pipeline -->
     <div class="card">
       <div class="card-header">
-        <h3><i class="fas fa-truck-fast" style="color:var(--primary);margin-right:0.5rem;"></i> Delivery Management</h3>
+        <h3><i class="fas fa-truck-fast" style="color:var(--primary);margin-right:0.5rem;"></i> Active Deliveries</h3>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <input class="search-box" placeholder="Search deliveries..." id="deliverySearch" oninput="filterDeliveryOrders()" />
+          <input class="search-box" placeholder="Search active pipeline..." id="deliverySearch" oninput="filterDeliveryOrders()" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Select Order</label>
           <select id="deliveryOrderSelect">
-            ${filteredDeliveryOrders.map(o => `<option value="${o.id}">${o.id} - ${o.customer}</option>`).join('')}
+            ${activeOrders.map(o => `<option value="${o.id}">${o.id} - ${o.customer}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -545,7 +558,19 @@ function renderDeliveryManagement() {
       <button class="btn" onclick="updateDeliveryFromSelect()"><i class="fas fa-sync"></i> Update Status</button>
       <table class="mt-2">
         <tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr>
-        <tbody id="deliveryBody">${rows}</tbody>
+        <tbody id="deliveryBody">${activeRows || '<tr><td colspan="6" class="text-muted text-center py-2">No active shipments in transit.</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <!-- Container 2: Read-Only Historical Log -->
+    <div class="card" style="margin-top: 2rem;">
+      <div class="card-header">
+        <h3><i class="fas fa-clipboard-list" style="color:var(--green);margin-right:0.5rem;"></i> Delivered Orders </h3>
+        <span class="badge badge-green">${deliveredOrders.length} Completed</span>
+      </div>
+      <table>
+        <tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr>
+        <tbody id="deliveredBody">${deliveredRows || '<tr><td colspan="6" class="text-muted text-center py-2">No delivered history records found.</td></tr>'}</tbody>
       </table>
     </div>
   `;
@@ -553,31 +578,52 @@ function renderDeliveryManagement() {
 
 function filterDeliveryOrders() {
   const search = document.getElementById('deliverySearch').value.toLowerCase();
-  const allowedStatuses = ['Ready for Pickup', 'Out for Delivery', 'Delivered'];
+  const activeStatuses = ['Ready for Pickup', 'Out for Delivery'];
 
-  // Apply both the status restriction and search text constraint
-  const filtered = onlineOrders.filter(o =>
-    allowedStatuses.includes(o.status) && (
+  const filteredActive = onlineOrders.filter(o =>
+    activeStatuses.includes(o.status) && (
       String(o.id).toLowerCase().includes(search) ||
       o.customer.toLowerCase().includes(search) ||
       String(o.address || '').toLowerCase().includes(search)
     )
   );
 
-  const tbody = document.getElementById('deliveryBody');
-  tbody.innerHTML = filtered.map(o => `
+  const filteredDelivered = onlineOrders.filter(o =>
+    o.status === 'Delivered' && (
+      String(o.id).toLowerCase().includes(search) ||
+      o.customer.toLowerCase().includes(search) ||
+      String(o.address || '').toLowerCase().includes(search)
+    )
+  );
+
+  const activeTbody = document.getElementById('deliveryBody');
+  activeTbody.innerHTML = filteredActive.map(o => `
     <tr>
       <td>${o.id}</td>
       <td>${o.customer}</td>
       <td>${o.customer_phone || o.phone || 'N/A'}</td>
       <td>${o.address || 'N/A'}</td>
-      <td><span class="badge ${o.status === 'Delivered' ? 'badge-green' : 'badge-orange'}">${o.status}</span></td>
+      <td><span class="badge badge-orange">${o.status}</span></td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
         <button class="btn btn-sm btn-yellow" onclick="updateDeliveryStatus('${o.id}')"><i class="fas fa-sync"></i> Update Status</button>
       </td>
     </tr>
-  `).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No deliveries found matching your search.</td></tr>';
+  `).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No active deliveries found matching search criteria.</td></tr>';
+
+  const deliveredTbody = document.getElementById('deliveredBody');
+  deliveredTbody.innerHTML = filteredDelivered.map(o => `
+    <tr>
+      <td>${o.id}</td>
+      <td>${o.customer}</td>
+      <td>${o.customer_phone || o.phone || 'N/A'}</td>
+      <td>${o.address || 'N/A'}</td>
+      <td><span class="badge badge-green">${o.status}</span></td>
+      <td>
+        <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails('${o.id}')"><i class="fas fa-eye"></i> View</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No matching historical delivery records found.</td></tr>';
 }
 
 async function updateDeliveryStatus(id) {
