@@ -32,6 +32,7 @@ function renderCustomCakeOrders() {
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateCustomCakeStatus('${c.id}')"><i class="fas fa-sync"></i> Update Status</button>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        <button class="btn btn-sm btn-outline" onclick="printCustomCakeReceipt('${c.id}')" style="margin-left: 0.25rem;"><i class="fas fa-print"></i> Print</button>
       </td>
     </tr>
   `).join('');
@@ -91,6 +92,7 @@ function filterCustomCakeOrders() {
       <td>
         <button class="btn btn-sm btn-yellow" onclick="updateCustomCakeStatus('${c.id}')"><i class="fas fa-sync"></i> Update Status</button>
         <button class="btn btn-sm btn-info" onclick="viewCustomCake('${c.id}')"><i class="fas fa-eye"></i> View</button>
+        <button class="btn btn-sm btn-outline" onclick="printCustomCakeReceipt('${c.id}')" style="margin-left: 0.25rem;"><i class="fas fa-print"></i> Print</button>
       </td>
     </tr>
   `).join('');
@@ -414,3 +416,116 @@ function filterViewCustomCakes() {
     </tr>
   `).join('') || '<tr><td colspan="6" class="text-muted text-center py-2">No pending requests matching your search.</td></tr>';
 }
+
+// Global function to print receipts for custom cake orders
+window.printCustomCakeReceipt = function(orderId) {
+  const order = customCakeRequests.find(c => String(c.id) === String(orderId));
+  if (!order) {
+    alert("Custom cake order data could not be located in application storage references.");
+    return;
+  }
+  
+  const now = new Date();
+  const printWindow = window.open('', '_blank');
+  const displayPrice = order.price && Number(order.price) > 0 ? `LKR ${Number(order.price).toFixed(2)}` : 'Pending Quote';
+  
+  printWindow.document.write(`
+  <html>
+  <head>
+      <title>Peoples Bakers - Receipt #CK-${order.id}</title>
+      <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+          
+          body { 
+              min-height: 100vh; 
+              display: flex; 
+              flex-direction: column; 
+              padding: 40px; 
+              color: #1e1e2a; 
+              background: #fff; 
+          }
+          .receipt-content { flex: 1; }
+          
+          .receipt-header { text-align: center; border-bottom: 2px solid #6b3fa0; padding-bottom: 15px; margin-bottom: 20px; }
+          .receipt-header h1 { font-size: 28px; color: #4f2e7a; font-weight: 700; letter-spacing: -0.5px; }
+          .receipt-header p { font-size: 13px; color: #5a5a72; font-weight: 600; text-transform: uppercase; margin-top: 4px; letter-spacing: 1px; }
+          
+          .detail-block { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #e4dfed; }
+          .detail-title { font-size: 12px; font-weight: 700; color: #5a5a72; text-transform: uppercase; margin-bottom: 4px; }
+          .detail-value { font-size: 14px; color: #2d2d3f; font-weight: 500; }
+          
+          .total-block { border-top: 2px solid #4f2e7a; padding-top: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+          .total-block span { font-size: 14px; font-weight: 700; color: #5a5a72; }
+          .total-block strong { font-size: 22px; font-weight: 700; color: #4f2e7a; }
+          
+          .metadata-section { font-size: 13px; line-height: 1.6; color: #2d2d3f; border-top: 1px solid #e4dfed; padding-top: 15px; }
+          .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+          .meta-label { font-weight: 600; color: #5a5a72; }
+          .meta-value { font-weight: 500; color: #1e1e2a; }
+          
+          .thank-you { text-align: center; margin-top: 30px; font-size: 12px; color: #8c7aa8; font-weight: 500; }
+          
+          @media print { 
+              body { padding: 20px; height: 100vh; } 
+              @page { size: auto; margin: 0; } 
+          }
+      </style>
+  </head>
+  <body>
+      <div class="receipt-content">
+          <div class="receipt-header">
+              <h1>Peoples Bakers</h1>
+              <p>Custom Cake Request Receipt</p>
+          </div>
+          
+          <div class="detail-block">
+              <div class="detail-title">Cake Design Summary</div>
+              <div class="detail-value"><strong>${order.design}</strong></div>
+          </div>
+          
+          <div class="detail-block">
+              <div class="detail-title">Thematic Description Details</div>
+              <div class="detail-value">${order.description || 'No description provided.'}</div>
+          </div>
+          
+          <div class="total-block">
+              <span>NET AMOUNT</span>
+              <strong>${displayPrice}</strong>
+          </div>
+          
+          <div class="metadata-section">
+              <div class="meta-row">
+                  <span class="meta-label">Customer Name:</span>
+                  <span class="meta-value">${order.customer}</span>
+              </div>
+              <div class="meta-row">
+                  <span class="meta-label">Contact Phone:</span>
+                  <span class="meta-value">${order.phone || 'N/A'}</span>
+              </div>
+              <div class="meta-row">
+                  <span class="meta-label">Required Date:</span>
+                  <span class="meta-value">${order.date || 'N/A'}</span>
+              </div>
+              <div class="meta-row">
+                  <span class="meta-label">Printed Date:</span>
+                  <span class="meta-value">${now.toLocaleDateString()} @ ${now.toLocaleTimeString()}</span>
+              </div>
+              <div class="meta-row" style="margin-top: 10px; font-size: 15px;">
+                  <span class="meta-label" style="color: #4f2e7a; font-weight: 700;">ORDER ID:</span>
+                  <span class="meta-value" style="color: #4f2e7a; font-weight: 700;">#CK-00${order.id}</span>
+              </div>
+          </div>
+      </div>
+      <p class="thank-you">Thank you for your business! Come back again.</p>
+  </body>
+  </html>
+  `);
+  
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+  }, 250);
+};
