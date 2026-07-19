@@ -75,7 +75,7 @@ const EmployeeAPI = {
 
 const CustomerAPI = {
     login: (email, password) => API.call('customers', 'login', 'POST', { email, password }),
-    register: (data) => API.call('customers', 'register', 'POST', data),
+    register: (data) => API.call('customers', 'create', 'POST', data),
     update: (data) => API.call('customers', 'update', 'POST', data)
 };
 
@@ -125,7 +125,7 @@ const CustomAPI = {
     list: () => API.call('orders', 'list', 'GET', { type: 'custom' }),
     
     // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Approved'
-    approve: (custom_order_id, approved_by, price) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Approved' }),
+    approve: (custom_order_id, approved_by, price) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Approved', price: price }),
     
     // Reuses the existing 'updateStatus' endpoint to set the Order status to 'Rejected'
     reject: (custom_order_id) => API.call('orders', 'updateStatus', 'POST', { order_id: custom_order_id, status: 'Rejected' }),

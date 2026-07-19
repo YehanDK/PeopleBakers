@@ -321,3 +321,42 @@ INSERT INTO DeliveryFee (delivery_tier, delivery_fee) VALUES
 INSERT INTO Customer (customer_name, customer_email, password, cust_phone_no, customer_address) VALUES 
 ('The Customer', 'customer@gmail.com', '1234', '0773456789', '45/1, De Kretser Place, Colombo 04'),
 ('Thidas Sandaruwan', 'thidas@gmail.com', '1234', '0714567890', '112, Kynsey Road, Colombo 08');
+
+-- ===========================================================================
+
+INSERT INTO ProductCategory (category_name) VALUES 
+('Short Eats'), 
+('Sweets'), 
+('Beverages'), 
+('Bites'),
+('Bread'),
+('Cake');
+
+-- 2. Insert 15 food items mapping to their respective categories with LKR valuation
+INSERT INTO Product (category_id, product_name, quantity, description, price) VALUES 
+-- Category: Cake (Peoples Bakers)
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Cake'), 'Classic Ribbon Cake', 10, 'Traditional Sri Lankan multi-layered tea time ribbon cake', 4200.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Cake'), 'Chocolate Fudge Birthday Cake', 5, 'Rich double layer chocolate fudge cake with custom birthday icing', 5500.00),
+
+-- Category: Bread / Pastry (Peoples Bakers)
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Bread'), 'Premium Milk Bread Loaf', 30, 'Soft and fluffy sliced sandwich milk bread loaf', 240.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Short Eats'), 'Kimbula Bun', 45, 'Traditional Sri Lankan crocodile-shaped sugar-crusted sweet bun', 120.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Short Eats'), 'Packeted Sugar Buns (4 Pcs)', 15, 'Soft sweet buns topped with sugar, packed for freshness', 380.00),
+
+-- Category: Short Eats (Outsourced from Local Catering Service)
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Short Eats'), 'Spicy Fish Patty', 60, 'Crispy baked pastry filled with spiced tuna and potato filling', 130.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Short Eats'), 'Chicken Cutlet', 75, 'Deep-fried breaded balls stuffed with seasoned minced chicken and potatoes', 110.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Short Eats'), 'Sri Lankan Egg Roti', 25, 'Griddled flatbread folded over a perfectly seasoned egg mixture', 160.00),
+
+-- Category: Sweets (Outsourced Traditional / Packaged Supplier)
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Sweets'), 'Konda Kavum Packet (5 Pcs)', 20, 'Traditional deep-fried oil cakes made from rice flour and kithul treacle', 500.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Sweets'), 'Kokis Packet (10 Pcs)', 25, 'Crispy, deep-fried traditional Sri Lankan savory-sweet flower biscuit', 400.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Sweets'), 'Packeted Marshmallows', 30, 'Soft and fluffy multi-colored vanilla flavored marshmallows', 250.00),
+
+-- Category: Beverages (Outsourced from Beverage Supplier)
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Beverages'), 'Elephant House Ginger Beer 500ml', 48, 'Authentic Sri Lankan carbonated ginger beverage', 230.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Beverages'), 'Chilled Iced Coffee 300ml', 24, 'Sweetened local milk coffee served cold in a bottle', 260.00),
+
+-- Category: Bites (Outsourced Packaged Supplier)
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Bites'), 'Spicy Cassava Chips Packet', 40, 'Crunchy fried manioc chips tossed in local chili powder and salt', 280.00),
+((SELECT category_id FROM ProductCategory WHERE category_name = 'Bites'), 'Fried Banana Chips Packet', 35, 'Crisply fried salted green banana slices, packed securely', 320.00);

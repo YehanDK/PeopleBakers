@@ -113,8 +113,16 @@ class OrdersAPI {
 
     public function updateStatus() {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $stmt = $this->pdo->prepare("UPDATE `Order` SET status = ? WHERE order_id = ?");
-        $stmt->execute([$data['status'], $data['order_id']]);
+        
+        // Check if price metadata is present in the payload
+        if (isset($data['price'])) {
+            $stmt = $this->pdo->prepare("UPDATE `Order` SET status = ?, total = ? WHERE order_id = ?");
+            $stmt->execute([$data['status'], $data['price'], $data['order_id']]);
+        } else {
+            $stmt = $this->pdo->prepare("UPDATE `Order` SET status = ? WHERE order_id = ?");
+            $stmt->execute([$data['status'], $data['order_id']]);
+        }
+        
         $this->handler->sendResponse(true, null, 'Status updated');
     }
 
