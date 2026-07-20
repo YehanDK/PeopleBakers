@@ -250,21 +250,6 @@ CREATE TABLE CartItem (
 
 
 -- insertions
--- Product Categories
-INSERT INTO ProductCategory (category_name) VALUES 
-('Pastry'), 
-('Bread'), 
-('Cake'), 
-('Cupcake');
-
--- Products (Prices scaled to typical LKR values)
-INSERT INTO Product (category_id, product_name, quantity, description, price) VALUES 
-(1, 'Croissant', 24, 'Flaky and buttery classic French pastry', 450.00),
-(2, 'Baguette', 18, 'Traditional crispy crust French baguette', 380.00),
-(3, 'Chocolate Cake', 6, 'Rich double chocolate layer gateau cake', 4800.00),
-(4, 'Vanilla Cupcake', 45, 'Fluffy vanilla cupcake with buttercream frosting', 320.00),
-(2, 'Sourdough', 12, 'Artisanal naturally leavened sourdough bread', 850.00),
-(1, 'Danish Pastry', 30, 'Sweet fruit-filled flaky danish pastry', 420.00);
 
 -- Employees (Salaries adjusted to monthly LKR baselines)
 INSERT INTO Employee (emp_name, username, password, emp_email, base_salary, emp_address, emp_phone_no, employee_role) VALUES 
@@ -304,13 +289,6 @@ INSERT INTO FinanceManager (emp_id, spending_limit, accounting_license) VALUES
 INSERT INTO SalesSupervisor (emp_id, qualifications, experience) VALUES 
 (7, 'B.Com in Marketing', '3 Years Retail Management');
 
-
--- Suppliers (Matches structural mapping for table: Supplier)
-INSERT INTO Supplier (supplier_name) VALUES 
-('Bakery Supply Co.'),
-('Dairy Distributors'),
-('Grain & Mill'),
-('Sweet Ingredients');
 
 
 -- Delivery Fees (Tier pricing in LKR)
